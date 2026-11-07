@@ -11,6 +11,7 @@ import {
   verifyReceipt,
   submitPayment,
   DEVNET_GENESIS,
+  waitForReceipt,
 } from "../src/lib/payment";
 const sender = Keypair.generate(),
   recipient = Keypair.generate().publicKey.toBase58();
@@ -49,6 +50,78 @@ function mockRpc(error: unknown = null, amount = 10000000) {
   } as unknown as Connection;
 }
 describe("Payment safeguards", () => {
+  it("does not broadcast a wallet-modified transfer", async () => {
+    const rpc = {
+      ...mockRpc(),
+      getLatestBlockhash: vi
+        .fn()
+        .mockResolvedValue({
+          blockhash: Keypair.generate().publicKey.toBase58(),
+          lastValidBlockHeight: 100,
+        }),
+      sendRawTransaction: vi.fn(),
+    };
+    const persist = vi.fn();
+    await expect(
+      submitPayment(
+        rpc as unknown as Connection,
+        sender.publicKey,
+        recipient,
+        "0.01",
+        async (tx) => {
+          tx.add(
+            SystemProgram.transfer({
+              fromPubkey: sender.publicKey,
+              toPubkey: Keypair.generate().publicKey,
+              lamports: 1,
+            }),
+          );
+          tx.sign(sender);
+          return tx;
+        },
+        persist,
+      ),
+    ).rejects.toThrow("different from the approved");
+    expect(persist).not.toHaveBeenCalled();
+    expect(rpc.sendRawTransaction).not.toHaveBeenCalled();
+  });
+  it("retries a delayed transaction lookup and never accepts mismatches", async () => {
+    const rpc = mockRpc();
+    const result = await rpc.getParsedTransaction("test");
+    vi.mocked(rpc.getParsedTransaction)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(result);
+    expect((await waitForReceipt(rpc, pending, 2, 0)).slot).toBe(123);
+    await expect(
+      waitForReceipt(mockRpc(null, 5), pending, 2, 0),
+    ).rejects.toThrow("does not match");
+  });
+  it("recovers confirmation transport errors using the already-submitted signature", async () => {
+    const rpc = {
+      ...mockRpc(),
+      getLatestBlockhash: vi.fn().mockResolvedValue({
+        blockhash: Keypair.generate().publicKey.toBase58(),
+        lastValidBlockHeight: 100,
+      }),
+      sendRawTransaction: vi.fn().mockResolvedValue("sig"),
+      confirmTransaction: vi
+        .fn()
+        .mockRejectedValue(new Error("WebSocket unavailable")),
+    };
+    const result = await submitPayment(
+      rpc as unknown as Connection,
+      sender.publicKey,
+      recipient,
+      "0.01",
+      async (tx) => {
+        tx.sign(sender);
+        return tx;
+      },
+      async () => {},
+    );
+    expect(result.slot).toBe(123);
+    expect(rpc.sendRawTransaction).toHaveBeenCalledTimes(1);
+  });
   it("pins the full Devnet genesis hash, not its truncated CAIP chain identifier", () => {
     expect(DEVNET_GENESIS).toBe("EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG");
   });
@@ -67,7 +140,12 @@ describe("Payment safeguards", () => {
     (value) => expect(() => toLamports(value)).toThrow(),
   );
   it("generates a receipt only for a confirmed matching transfer", async () => {
-    const receipt = await verifyReceipt(mockRpc(), pending);
+    const rpc = mockRpc();
+    const receipt = await verifyReceipt(rpc, pending);
+    expect(rpc.getParsedTransaction).toHaveBeenCalledWith(pending.signature, {
+      commitment: "confirmed",
+      maxSupportedTransactionVersion: 1,
+    });
     expect(receipt).toEqual({
       ...pending,
       network: "devnet",

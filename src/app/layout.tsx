@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "@solana/wallet-adapter-react-ui/styles.css";
+import "./wallet.css";
 import "./globals.css";
 export const metadata: Metadata = {
   title: "InvoiceShield AI — Verify smarter. Pay faster.",

@@ -8,6 +8,7 @@ import type { Receipt, PendingPayment } from "./invoice";
 import bs58 from "bs58";
 export const DEVNET_RPC = "https://api.devnet.solana.com";
 export const DEVNET_GENESIS = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
+export class PendingReceiptError extends Error {}
 export function validAddress(value: string) {
   try {
     return PublicKey.isOnCurve(new PublicKey(value).toBytes());
@@ -39,10 +40,10 @@ export async function verifyReceipt(
   await assertDevnet(connection);
   const tx = await connection.getParsedTransaction(payment.signature, {
     commitment: "confirmed",
-    maxSupportedTransactionVersion: 0,
+    maxSupportedTransactionVersion: 1,
   });
   if (!tx || !tx.meta)
-    throw new Error(
+    throw new PendingReceiptError(
       "Transaction not yet available. Retry verification; do not send another payment.",
     );
   if (tx.meta.err) throw new Error("The transaction failed on-chain.");
@@ -71,6 +72,25 @@ export async function verifyReceipt(
     timestamp: tx.blockTime ?? null,
   };
 }
+export async function waitForReceipt(
+  connection: Connection,
+  payment: PendingPayment,
+  attempts = 8,
+  delayMs = 1500,
+): Promise<Receipt> {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await verifyReceipt(connection, payment);
+    } catch (error) {
+      if (!(error instanceof PendingReceiptError) || attempt === attempts - 1)
+        throw error;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new PendingReceiptError(
+    "Verification is pending. Do not send another payment.",
+  );
+}
 export async function submitPayment(
   connection: Connection,
   sender: PublicKey,
@@ -93,7 +113,16 @@ export async function submitPayment(
       lamports,
     }),
   );
+  const approvedMessage = tx.serializeMessage();
   const signed = await sign(tx);
+  const signedMessage = signed.serializeMessage();
+  if (
+    approvedMessage.length !== signedMessage.length ||
+    approvedMessage.some((byte, index) => byte !== signedMessage[index])
+  )
+    throw new Error(
+      "Wallet returned a transaction different from the approved transfer. Nothing was submitted.",
+    );
   // Persist the signature before broadcasting. Ambiguous RPC errors cannot enable a second send.
   const signatureBytes = signed.signature;
   if (!signatureBytes) throw new Error("Wallet did not sign the transaction.");
@@ -104,13 +133,20 @@ export async function submitPayment(
     skipPreflight: false,
     maxRetries: 3,
   });
-  const result = await connection.confirmTransaction(
-    { ...latest, signature },
-    "confirmed",
-  );
+  let result;
+  try {
+    result = await connection.confirmTransaction(
+      { ...latest, signature },
+      "confirmed",
+    );
+  } catch {
+    // A websocket/confirmation timeout is ambiguous. Read the same signature;
+    // never reconstruct or broadcast a different transaction as a retry.
+    return waitForReceipt(connection, pending);
+  }
   if (result.value.err)
     throw new Error("The transaction was rejected on-chain.");
-  return verifyReceipt(connection, pending);
+  return waitForReceipt(connection, pending);
 }
 export const explorer = (signature: string) =>
   `https://explorer.solana.com/tx/${encodeURIComponent(signature)}?cluster=devnet`;

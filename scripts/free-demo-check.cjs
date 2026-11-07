@@ -4,7 +4,13 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 const sharp = require("sharp");
 let browser;
+const baseURL = (process.env.TEST_BASE_URL || "http://127.0.0.1:3000").replace(
+  /\/$/,
+  "",
+);
+const screenshotDir = process.env.TEST_SCREENSHOT_DIR || "docs/screenshots";
 async function main() {
+  await fs.mkdir(screenshotDir, { recursive: true });
   browser = await chromium.launch({
     executablePath:
       process.env.BROWSER_EXECUTABLE ||
@@ -23,7 +29,7 @@ async function main() {
     if (r.url().includes("/api/analyze") || r.url().includes("api.openai.com"))
       cloud.push(r.url());
   });
-  await page.goto("http://127.0.0.1:3000/dashboard", {
+  await page.goto(`${baseURL}/dashboard`, {
     waitUntil: "domcontentloaded",
   });
   await page
@@ -75,7 +81,7 @@ async function main() {
     throw error;
   }
   await page.screenshot({
-    path: "docs/screenshots/free-extraction.png",
+    path: `${screenshotDir}/free-extraction.png`,
     fullPage: true,
   });
   await page.getByRole("button", { name: "Save & verify invoice" }).click();
@@ -106,7 +112,7 @@ async function main() {
     true,
   );
   await page.screenshot({
-    path: "docs/screenshots/suspicious-review.png",
+    path: `${screenshotDir}/suspicious-review.png`,
     fullPage: true,
   });
   await page.getByRole("button", { name: "← Back to invoices" }).click();

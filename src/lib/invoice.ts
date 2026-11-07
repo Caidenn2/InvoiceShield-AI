@@ -59,6 +59,9 @@ export type Invoice = InvoiceData & {
   extractionMethod?: "pdf-text" | "local-ocr";
   localAI?: {
     model: string;
+    provider?: "groq" | "ollama";
+    analyzedAt?: string;
+    cached?: boolean;
     summary: string;
     findings: {
       severity: "high" | "medium" | "info";

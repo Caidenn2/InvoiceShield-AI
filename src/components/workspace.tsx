@@ -35,7 +35,6 @@ import {
   Trash2,
   Download,
   LockKeyhole,
-  Cpu,
 } from "lucide-react";
 import {
   Invoice,
@@ -49,10 +48,15 @@ import {
 } from "@/lib/invoice";
 import { extractLocally } from "@/lib/local-extraction";
 import { parseInvoiceText } from "@/lib/local-parser";
-import { localAISchema } from "@/lib/local-ai";
 import DemoGuide from "./demo-guide";
+import SemanticReview from "./semantic-review";
 import { samples } from "@/lib/samples";
-import { explorer, submitPayment, waitForReceipt } from "@/lib/payment";
+import {
+  explorer,
+  submitPayment,
+  waitForReceipt,
+  paymentInputError,
+} from "@/lib/payment";
 
 const storageKey = "invoiceshield.records.v1";
 function Modal({
@@ -128,9 +132,7 @@ export default function Workspace() {
       "pdf-text" | "local-ocr" | undefined
     >(),
     [localReport, setLocalReport] = useState<Invoice["localAI"]>(),
-    [progress, setProgress] = useState(""),
-    [localReady, setLocalReady] = useState(false),
-    [localReason, setLocalReason] = useState("Checking optional local model…");
+    [progress, setProgress] = useState("");
   const [records, setRecords] = useState<Invoice[]>([]),
     [ready, setReady] = useState(false),
     [storageError, setStorageError] = useState("");
@@ -165,18 +167,8 @@ export default function Workspace() {
     wallet = useWallet();
   const { setVisible: setWalletSelectorVisible } = useWalletModal();
   useEffect(() => {
-    fetch("/api/local-ai")
-      .then((r) => r.json())
-      .then((data) => {
-        setLocalReady(data.available === true);
-        setLocalReason(data.reason || "Local AI unavailable.");
-      })
-      .catch(() =>
-        setLocalReason(
-          "Optional local model unavailable. Free extraction and rules are ready.",
-        ),
-      );
-  }, []);
+    setLocalReport(undefined);
+  }, [draft]);
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -353,44 +345,6 @@ export default function Workspace() {
       setBusy(false);
     }
   }
-  async function analyzeLocal() {
-    if (!extractedText) return;
-    setBusy(true);
-    setError("");
-    setProgress("Running optional local AI…");
-    try {
-      const response = await fetch("/api/local-ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: extractedText,
-          history: JSON.stringify(
-            history.current.slice(0, 10).map((i) => ({
-              vendor: i.vendor,
-              number: i.number,
-              total: i.total,
-              items: i.items.slice(0, 3).map((v) => v.description),
-            })),
-          ).slice(0, 10000),
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      const report = localAISchema.parse(data.report);
-      setLocalReport({ ...report, model: data.report.model });
-      setProgress(
-        "Local AI completed. Its findings are separate from deterministic rules.",
-      );
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Local model unavailable. No AI report was generated.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
   async function extractWithOpenAI() {
     if (!file) return;
     setBusy(true);
@@ -541,11 +495,12 @@ export default function Workspace() {
     }
   }
   async function retryVerification() {
-    if (!current?.pending) return;
+    const previous = current?.pending || current?.receipt;
+    if (!current || !previous) return;
     setPayBusy(true);
     setPayError("");
     try {
-      const receipt = await waitForReceipt(connection, current.pending);
+      const receipt = await waitForReceipt(connection, previous);
       await updatePayment(current.id, { receipt, pending: undefined });
       setNotice("Receipt verified against Solana Devnet.");
       refreshBalance();
@@ -921,45 +876,21 @@ export default function Workspace() {
                         </p>
                       </section>
                       <section className="panel payment-panel">
-                        <div className="local-ai-report">
-                          <div className="local-ai-heading">
-                            <Cpu size={17} />
-                            <h3>Semantic AI review</h3>
-                            <span className="mini-label">
-                              {current.localAI
-                                ? "LOCAL MODEL · LIVE"
-                                : "NOT RUN"}
-                            </span>
-                          </div>
-                          {current.localAI ? (
-                            <>
-                              <p>{current.localAI.summary}</p>
-                              <small>
-                                Ollama · {current.localAI.model} · advisory
-                                findings
-                              </small>
-                              {current.localAI.findings.map((f, i) => (
-                                <article className="finding" key={i}>
-                                  <div>
-                                    <h4>{f.title}</h4>
-                                    <span className="mini-label">
-                                      AI · {f.severity}
-                                    </span>
-                                  </div>
-                                  <p>{f.evidence}</p>
-                                  <small>{f.action}</small>
-                                </article>
-                              ))}
-                            </>
-                          ) : (
-                            <p>
-                              No semantic AI model ran for this invoice.
-                              Rule-based findings above remain fully functional.
-                              Local OCR recognizes text; it does not determine
-                              fraud.
-                            </p>
-                          )}
-                        </div>
+                        <SemanticReview
+                          invoice={current}
+                          documentText={current.documentText}
+                          history={records.filter((i) => i.id !== current.id)}
+                          report={current.localAI}
+                          onReport={(report) => {
+                            updatePayment(current.id, {
+                              localAI: report,
+                            }).catch(() =>
+                              setPayError(
+                                "Could not save model report. Browser storage may be full.",
+                              ),
+                            );
+                          }}
+                        />
                         <div className="panel-title">
                           <h2>
                             <Wallet size={18} /> Devnet payment
@@ -1002,6 +933,18 @@ export default function Workspace() {
                               </dd>
                             </dl>
                             <div className="button-row">
+                              <button
+                                className="button secondary small"
+                                disabled={payBusy}
+                                onClick={retryVerification}
+                              >
+                                {payBusy ? (
+                                  <LoaderCircle className="spin" size={14} />
+                                ) : (
+                                  <RefreshCw size={14} />
+                                )}
+                                Reverify on Devnet
+                              </button>
                               <a
                                 className="button secondary small"
                                 href={explorer(current.receipt.signature)}
@@ -1628,26 +1571,14 @@ export default function Workspace() {
                 Map text to fields
               </button>
             </details>
-            <div className="optional-ai">
-              <div>
-                <Cpu size={16} />
-                <strong>Optional local AI</strong>
-                <span className="mini-label">FREE</span>
-              </div>
-              <p>{localReason}</p>
-              <button
-                className="button secondary full small"
-                disabled={!localReady || !extractedText || busy}
-                onClick={analyzeLocal}
-              >
-                Analyze with Ollama
-              </button>
-              {localReport && (
-                <p className="green">
-                  Local model completed: {localReport.model}
-                </p>
-              )}
-            </div>
+            <SemanticReview
+              invoice={draft}
+              documentText={extractedText}
+              history={records.filter((i) => i.id !== selected)}
+              report={localReport}
+              onReport={setLocalReport}
+              disabled={busy}
+            />
             <details className="optional-cloud">
               <summary>Optional cloud provider (disabled by default)</summary>
               <p className="fine-print">
@@ -1852,6 +1783,10 @@ export default function Workspace() {
             <span>Recipient wallet address</span>
             <input
               value={recipient}
+              aria-invalid={Boolean(
+                recipient &&
+                paymentInputError(recipient, sol, wallet.publicKey?.toBase58()),
+              )}
               onChange={(e) => {
                 setRecipient(e.target.value.trim());
                 setConsent(false);
@@ -1892,6 +1827,16 @@ export default function Workspace() {
               {payError}
             </p>
           )}
+          {(recipient || consent) &&
+            paymentInputError(recipient, sol, wallet.publicKey?.toBase58()) && (
+              <p className="error-text" role="alert">
+                {paymentInputError(
+                  recipient,
+                  sol,
+                  wallet.publicKey?.toBase58(),
+                )}
+              </p>
+            )}
           <button
             className="button full"
             onClick={pay}
@@ -1899,6 +1844,9 @@ export default function Workspace() {
               !wallet.publicKey ||
               !wallet.signTransaction ||
               !consent ||
+              Boolean(
+                paymentInputError(recipient, sol, wallet.publicKey?.toBase58()),
+              ) ||
               payBusy ||
               !!current?.pending ||
               !!current?.receipt

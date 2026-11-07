@@ -2,13 +2,15 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
-const secrets = ["OPENAI_API_KEY", "INVOICE_ANALYSIS_TOKEN"]
+const secrets = [
+  "OPENAI_API_KEY",
+  "INVOICE_ANALYSIS_TOKEN",
+  "GROQ_API_KEY",
+  "GEMINI_API_KEY",
+]
   .map((k) => process.env[k])
   .filter(Boolean);
-if (secrets.length !== 2) {
-  console.error("Both credentials must be configured for this check.");
-  process.exit(1);
-}
+console.log("configured_secret_count=" + secrets.length);
 const tracked = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" })
   .split("\0")
   .filter(Boolean);

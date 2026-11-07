@@ -3,6 +3,11 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 const fs = require("node:fs/promises");
 const assert = require("node:assert/strict");
 let testBrowser;
+const baseURL = (process.env.TEST_BASE_URL || "http://127.0.0.1:3000").replace(
+  /\/$/,
+  "",
+);
+const screenshotDir = process.env.TEST_SCREENSHOT_DIR || "docs/screenshots";
 async function main() {
   const browser = (testBrowser = await chromium.launch({
     executablePath:
@@ -16,11 +21,11 @@ async function main() {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await fs.mkdir("docs/screenshots", { recursive: true });
-  await page.goto("http://127.0.0.1:3000", { waitUntil: "domcontentloaded" });
+  await fs.mkdir(screenshotDir, { recursive: true });
+  await page.goto(baseURL, { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: /Good business/ }).waitFor();
   await page.screenshot({
-    path: "docs/screenshots/landing.png",
+    path: `${screenshotDir}/landing.png`,
     fullPage: true,
   });
   await page.getByRole("link", { name: "Open your workspace" }).click();
@@ -32,7 +37,7 @@ async function main() {
     .getByText("Four fictional samples loaded.", { exact: false })
     .waitFor();
   await page.screenshot({
-    path: "docs/screenshots/dashboard.png",
+    path: `${screenshotDir}/dashboard.png`,
     fullPage: true,
   });
   assert.equal(
@@ -47,7 +52,7 @@ async function main() {
     .first()
     .waitFor();
   await page.screenshot({
-    path: "docs/screenshots/review.png",
+    path: `${screenshotDir}/review.png`,
     fullPage: true,
   });
   await page.getByRole("button", { name: "← Back to invoices" }).click();
@@ -59,7 +64,7 @@ async function main() {
     .setInputFiles("public/samples/normal.png");
   await page.getByRole("img", { name: "Uploaded invoice preview" }).waitFor();
   // Manual fallback is covered here; actual OCR runs in test:free-demo.
-  const cloud = await page.request.post("http://127.0.0.1:3000/api/analyze", {
+  const cloud = await page.request.post(`${baseURL}/api/analyze`, {
     data: "disabled-check",
   });
   assert.equal(cloud.status(), 503);
@@ -98,7 +103,7 @@ async function main() {
     .waitFor();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
-    path: "docs/screenshots/mobile.png",
+    path: `${screenshotDir}/mobile.png`,
     fullPage: true,
   });
   assert.equal(

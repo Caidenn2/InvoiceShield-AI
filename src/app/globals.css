@@ -1749,6 +1749,7 @@ tbody tr:hover {
 }
 .button-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   padding: 0 21px 21px;

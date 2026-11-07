@@ -34,6 +34,24 @@ export async function assertDevnet(connection: Connection) {
   if ((await connection.getGenesisHash()) !== DEVNET_GENESIS)
     throw new Error("Payment blocked: the RPC is not Solana Devnet.");
 }
+export function paymentInputError(
+  recipient: string,
+  amount: string,
+  sender?: string,
+): string | null {
+  if (!validAddress(recipient))
+    return "Enter a valid recipient wallet address.";
+  if (sender && sender === recipient)
+    return "Choose a recipient different from your connected wallet.";
+  try {
+    toLamports(amount);
+  } catch (error) {
+    return error instanceof Error
+      ? error.message
+      : "Enter a valid test SOL amount.";
+  }
+  return null;
+}
 export async function verifyReceipt(
   connection: Connection,
   payment: PendingPayment,

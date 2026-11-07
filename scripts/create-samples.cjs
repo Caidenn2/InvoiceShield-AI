@@ -1,10 +1,24 @@
 // Build portable, fictional PNG invoice fixtures. Requires the optional sharp dev tool.
-const fs=require('node:fs/promises');
-const path=require('node:path');
-const sharp=require(process.env.SHARP_MODULE||'sharp');
-const root=path.resolve(__dirname,'../public/samples');
-async function main(){await fs.mkdir(root,{recursive:true});for(const [slug,number,date,a,b,total] of [['normal','FRM-2026-104','2026-11-02',1800,600,2592],['exact-duplicate','FRM-2026-104','2026-11-02',1800,600,2592],['near-duplicate','FRM-2026-105','2026-11-03',1820,600,2612]]){
- const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1100" viewBox="0 0 900 1100"><rect width="900" height="1100" fill="#f3f6f2"/><rect x="60" y="60" width="70" height="70" rx="12" fill="#214a35"/><text x="75" y="112" font-family="Georgia" font-size="48" fill="#d7ebdc">F.</text><g font-family="Arial, sans-serif"><text x="840" y="90" text-anchor="end" font-size="22" letter-spacing="4" fill="#55715e">INVOICE</text><text x="840" y="120" text-anchor="end" font-size="12" fill="#64856e">FICTIONAL SAMPLE - NOT PAYABLE</text><text x="60" y="205" font-size="38" fill="#253f2e">Forma Studio</text><text x="60" y="245" font-size="17" fill="#7a8c7d">Brand and digital design services</text><g font-size="14" fill="#7a8c7d"><text x="60" y="325">INVOICE NUMBER</text><text x="360" y="325">ISSUED</text><text x="650" y="325">DUE</text></g><g font-size="19" fill="#253f2e"><text x="60" y="365">${number}</text><text x="360" y="365">${date}</text><text x="650" y="365">2026-11-16</text></g><path d="M60 425H840M60 475H840M60 555H840M60 635H840" stroke="#ccd8ce"/><g font-size="14" fill="#7a8c7d"><text x="60" y="456">DESCRIPTION</text><text x="500" y="456">QTY</text><text x="610" y="456">RATE (USD)</text><text x="840" y="456" text-anchor="end">AMOUNT</text></g><g font-size="18" fill="#253f2e"><text x="60" y="523">Brand identity design</text><text x="500" y="523">1</text><text x="610" y="523">${a}.00</text><text x="840" y="523" text-anchor="end">${a}.00</text><text x="60" y="603">Website art direction</text><text x="500" y="603">4</text><text x="610" y="603">150.00</text><text x="840" y="603" text-anchor="end">${b}.00</text></g><g font-size="18" fill="#55715e"><text x="500" y="710">Subtotal</text><text x="840" y="710" text-anchor="end">${a+b}.00</text><text x="500" y="755">Tax</text><text x="840" y="755" text-anchor="end">192.00</text></g><path d="M500 785H840" stroke="#bdcfc0"/><text x="500" y="835" font-size="21" fill="#214a35">Total USD</text><text x="840" y="835" text-anchor="end" font-size="37" fill="#214a35">${total}.00</text><path d="M60 925H840" stroke="#ccd8ce"/><text x="60" y="965" font-size="15" fill="#6d8372">Printed payment details: Forma Studio - account ending 2048</text><text x="60" y="1010" font-size="13" fill="#8b9c8d">Created for InvoiceShield AI testing. No real business or financial obligation.</text></g></svg>`;
- await fs.writeFile(path.join(root,slug+'.svg'),svg);await sharp(Buffer.from(svg)).png().toFile(path.join(root,slug+'.png'));
-}console.log('Created 3 fictional invoice PNGs and SVG sources.');}
-main().catch(e=>{console.error(e);process.exitCode=1});
+const fs = require("node:fs/promises");
+const path = require("node:path");
+const sharp = require(process.env.SHARP_MODULE || "sharp");
+const root = path.resolve(__dirname, "../public/samples");
+async function main() {
+  await fs.mkdir(root, { recursive: true });
+  for (const [slug, number, date, a, b, total] of [
+    ["normal", "FRM-2026-104", "2026-11-02", 1800, 600, 2592],
+    ["exact-duplicate", "FRM-2026-104", "2026-11-02", 1800, 600, 2592],
+    ["near-duplicate", "FRM-2026-105", "2026-11-03", 1820, 600, 2612],
+  ]) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1100" viewBox="0 0 900 1100"><rect width="900" height="1100" fill="#f3f6f2"/><rect x="60" y="60" width="70" height="70" rx="12" fill="#214a35"/><text x="75" y="112" font-family="Georgia" font-size="48" fill="#d7ebdc">F.</text><g font-family="Arial, sans-serif"><text x="840" y="90" text-anchor="end" font-size="22" letter-spacing="4" fill="#55715e">INVOICE</text><text x="840" y="120" text-anchor="end" font-size="12" fill="#64856e">FICTIONAL SAMPLE - NOT PAYABLE</text><text x="60" y="205" font-size="38" fill="#253f2e">Forma Studio</text><text x="60" y="245" font-size="17" fill="#7a8c7d">Brand and digital design services</text><g font-size="14" fill="#7a8c7d"><text x="60" y="325">INVOICE NUMBER</text><text x="360" y="325">ISSUED</text><text x="650" y="325">DUE</text></g><g font-size="19" fill="#253f2e"><text x="60" y="365">${number}</text><text x="360" y="365">${date}</text><text x="650" y="365">2026-11-16</text></g><path d="M60 425H840M60 475H840M60 555H840M60 635H840" stroke="#ccd8ce"/><g font-size="14" fill="#7a8c7d"><text x="60" y="456">DESCRIPTION</text><text x="500" y="456">QTY</text><text x="610" y="456">RATE (USD)</text><text x="840" y="456" text-anchor="end">AMOUNT</text></g><g font-size="18" fill="#253f2e"><text x="60" y="523">Brand identity design</text><text x="500" y="523">1</text><text x="610" y="523">${a}.00</text><text x="840" y="523" text-anchor="end">${a}.00</text><text x="60" y="603">Website art direction</text><text x="500" y="603">4</text><text x="610" y="603">150.00</text><text x="840" y="603" text-anchor="end">${b}.00</text></g><g font-size="18" fill="#55715e"><text x="500" y="710">Subtotal</text><text x="840" y="710" text-anchor="end">${a + b}.00</text><text x="500" y="755">Tax</text><text x="840" y="755" text-anchor="end">192.00</text></g><path d="M500 785H840" stroke="#bdcfc0"/><text x="500" y="835" font-size="21" fill="#214a35">Total USD</text><text x="840" y="835" text-anchor="end" font-size="37" fill="#214a35">${total}.00</text><path d="M60 925H840" stroke="#ccd8ce"/><text x="60" y="965" font-size="15" fill="#6d8372">Printed payment details: Forma Studio - account ending 2048</text><text x="60" y="1010" font-size="13" fill="#8b9c8d">Created for InvoiceShield AI testing. No real business or financial obligation.</text></g></svg>`;
+    await fs.writeFile(path.join(root, slug + ".svg"), svg);
+    await sharp(Buffer.from(svg))
+      .png()
+      .toFile(path.join(root, slug + ".png"));
+  }
+  console.log("Created 3 fictional invoice PNGs and SVG sources.");
+}
+main().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
+});

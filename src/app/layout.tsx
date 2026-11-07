@@ -1,4 +1,18 @@
-import type { Metadata } from 'next';
-import './globals.css';
-export const metadata: Metadata = {title:'InvoiceShield AI — Verify smarter. Pay faster.',description:'Invoice intelligence meets verifiable Solana Devnet payments.'};
-export default function RootLayout({children}:{children:React.ReactNode}) {return <html lang="en"><body>{children}</body></html>}
+import type { Metadata } from "next";
+import "@solana/wallet-adapter-react-ui/styles.css";
+import "./globals.css";
+export const metadata: Metadata = {
+  title: "InvoiceShield AI — Verify smarter. Pay faster.",
+  description: "Invoice intelligence meets verifiable Solana Devnet payments.",
+};
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" data-scroll-behavior="smooth">
+      <body>{children}</body>
+    </html>
+  );
+}

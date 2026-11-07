@@ -2711,3 +2711,22 @@ tbody tr:hover {
     width: 53px;
   }
 }
+.receipt-lookup {
+  margin-bottom: 24px;
+}
+.receipt-lookup-body {
+  padding: 20px 22px;
+}
+.receipt-lookup .confirmed-heading {
+  padding-left: 0;
+}
+.receipt-lookup .receipt-data {
+  padding-left: 0;
+}
+.receipt-lookup .fine-print {
+  margin-top: 14px;
+}
+.receipt-lookup input {
+  font-family: monospace;
+  font-size: 11px;
+}

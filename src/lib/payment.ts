@@ -110,6 +110,41 @@ export async function waitForReceipt(
     "Verification is pending. Do not send another payment.",
   );
 }
+export async function readConfirmedTransfer(
+  connection: Connection,
+  signature: string,
+): Promise<Receipt> {
+  try {
+    if (bs58.decode(signature).length !== 64) throw new Error();
+  } catch {
+    throw new Error("Enter a valid public Solana transaction signature.");
+  }
+  await assertDevnet(connection);
+  const tx = await connection.getParsedTransaction(signature, {
+    commitment: "confirmed",
+    maxSupportedTransactionVersion: 1,
+  });
+  if (!tx || !tx.meta)
+    throw new PendingReceiptError(
+      "No confirmed Devnet transaction is available for this signature.",
+    );
+  if (tx.meta.err) throw new Error("This transaction failed on-chain.");
+  const transfers = tx.transaction.message.instructions.filter(
+    (i) =>
+      "parsed" in i && i.program === "system" && i.parsed?.type === "transfer",
+  );
+  if (transfers.length !== 1 || !("parsed" in transfers[0]))
+    throw new Error(
+      "This receipt viewer supports one direct SOL transfer per transaction.",
+    );
+  const info = transfers[0].parsed.info;
+  return verifyReceipt(connection, {
+    signature,
+    sender: info.source,
+    recipient: info.destination,
+    lamports: info.lamports,
+  });
+}
 export async function submitPayment(
   connection: Connection,
   sender: PublicKey,

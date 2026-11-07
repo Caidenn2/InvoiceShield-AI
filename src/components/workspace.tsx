@@ -50,6 +50,7 @@ import { extractLocally } from "@/lib/local-extraction";
 import { parseInvoiceText } from "@/lib/local-parser";
 import DemoGuide from "./demo-guide";
 import SemanticReview from "./semantic-review";
+import ReceiptLookup from "./receipt-lookup";
 import { samples } from "@/lib/samples";
 import {
   explorer,
@@ -1162,6 +1163,7 @@ export default function Workspace() {
                       }}
                     />
                   )}
+                  {tab === "receipts" && <ReceiptLookup />}
                   <div className="dashboard-grid">
                     <section className="panel invoices-panel">
                       <div className="panel-title">

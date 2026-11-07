@@ -2,5 +2,5 @@
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build",
-  "env": { "ENABLE_OPENAI": "false" }
+  "env": { "ENABLE_OPENAI": "false", "GROQ_FREE_PLAN_CONFIRMED": "true" }
 }

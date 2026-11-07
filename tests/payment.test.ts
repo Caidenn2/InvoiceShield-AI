@@ -15,7 +15,9 @@ import {
   submitPayment,
   DEVNET_GENESIS,
   waitForReceipt,
+  readConfirmedTransfer,
 } from "../src/lib/payment";
+import bs58 from "bs58";
 const sender = Keypair.generate(),
   recipient = Keypair.generate().publicKey.toBase58();
 const pending = {
@@ -53,6 +55,33 @@ function mockRpc(error: unknown = null, amount = 10000000) {
   } as unknown as Connection;
 }
 describe("Payment safeguards", () => {
+  it("reads an existing confirmed transfer by signature with no signing or submission API", async () => {
+    const rpc = mockRpc();
+    const signature = bs58.encode(new Uint8Array(64).fill(3));
+    const result = await readConfirmedTransfer(rpc, signature);
+    expect(result).toMatchObject({ ...pending, signature, network: "devnet" });
+    expect(rpc.getParsedTransaction).toHaveBeenCalledTimes(2);
+  });
+  it("rejects malformed lookup signatures before contacting RPC", async () => {
+    const rpc = mockRpc();
+    await expect(readConfirmedTransfer(rpc, "bad")).rejects.toThrow(
+      "valid public",
+    );
+    expect(rpc.getGenesisHash).not.toHaveBeenCalled();
+  });
+  it("refuses failed or non-transfer signatures in the read-only viewer", async () => {
+    const signature = bs58.encode(new Uint8Array(64).fill(3));
+    await expect(
+      readConfirmedTransfer(mockRpc({ error: 1 }), signature),
+    ).rejects.toThrow("failed on-chain");
+    const rpc = mockRpc();
+    const tx = await rpc.getParsedTransaction("unused");
+    tx!.transaction.message.instructions = [];
+    vi.mocked(rpc.getParsedTransaction).mockResolvedValue(tx);
+    await expect(readConfirmedTransfer(rpc, signature)).rejects.toThrow(
+      "one direct SOL transfer",
+    );
+  });
   it.each(["recipient", "amount", "blockhash", "fee payer", "priority fee"])(
     "blocks a changed %s before persistence or broadcast",
     async (change) => {

@@ -2495,21 +2495,21 @@ tbody tr:hover {
   color: #90b6c6;
 }
 .local-ai-heading h3 {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   color: #c5dce3;
 }
 .local-ai-heading .mini-label {
   margin-left: auto;
-  font-size: 7px;
+  font-size: 9px;
 }
 .local-ai-report > p {
-  font-size: 10px;
+  font-size: 13px;
   color: #849fae;
   line-height: 1.9;
 }
 .local-ai-report > small {
-  font-size: 9px;
+  font-size: 11px;
   color: #80ae9e;
 }
 .local-ai-report .finding {
@@ -2729,4 +2729,82 @@ tbody tr:hover {
 .receipt-lookup input {
   font-family: monospace;
   font-size: 11px;
+}
+.review-flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 0 0 20px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #14242a;
+}
+.review-flow span {
+  font-size: 12px;
+  color: #c0d4d8;
+}
+.review-flow b {
+  color: var(--green);
+  font-size: 10px;
+  margin-right: 8px;
+}
+.receipt-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  border-left: 2px solid var(--green);
+  background: #14242a;
+}
+.receipt-shortcut span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #b0c4cd;
+}
+.score-key {
+  max-width: 340px;
+  font-size: 11px !important;
+  line-height: 1.6;
+  margin-top: 6px;
+}
+.finding p strong,
+.finding small strong {
+  display: block;
+  font-size: 10px;
+  color: #b8d0d9;
+  margin-bottom: 4px;
+}
+.finding .indicator-note {
+  color: #b5a47c;
+  font-size: 10px;
+}
+.finding p,
+.finding small {
+  overflow-wrap: anywhere;
+}
+.local-ai-report {
+  border-top: 2px solid #71d7b5;
+}
+.local-ai-heading {
+  flex-wrap: wrap;
+}
+.local-ai-report .finding p,
+.local-ai-report .finding small {
+  font-size: 12px;
+  line-height: 1.75;
+}
+@media (max-width: 650px) {
+  .review-flow {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 14px;
+  }
+  .receipt-shortcut {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }

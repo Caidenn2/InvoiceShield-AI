@@ -40,8 +40,18 @@ async function main() {
   await page.getByRole("heading", { name: /Good business/ }).waitFor();
   await page.getByRole("link", { name: "Open your workspace" }).click();
   await page
-    .getByRole("heading", { name: "A clearer view. A confident next move." })
+    .getByRole("heading", { name: "Catch invoice fraud before you pay." })
     .waitFor();
+  await page
+    .getByRole("heading", { name: "Your first review starts here." })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Verify an existing transaction" })
+    .click();
+  await page
+    .getByRole("heading", { name: "Verify an existing transfer" })
+    .waitFor();
+  await page.getByRole("button", { name: "Overview", exact: true }).click();
   await page.getByRole("button", { name: "Explore sample invoices" }).click();
   await page.getByRole("button", { name: /N\. Nimbus Cloud NMB-0082/ }).click();
   assert.equal(await page.locator(".risk-dial b").innerText(), "0");
@@ -76,6 +86,17 @@ async function main() {
     .getByRole("button", { name: "Catch a suspicious duplicate", exact: false })
     .click();
   assert.equal(await page.locator(".risk-dial b").innerText(), "100");
+  await page.getByLabel("Payment review workflow").waitFor();
+  await page.getByText("High +40", { exact: false }).waitFor();
+  await page
+    .getByText("Payment blocked: a high-severity rule", { exact: false })
+    .waitFor();
+  await page.getByRole("heading", { name: "Semantic AI Review" }).waitFor();
+  assert.ok(
+    (await page.locator(".verification-panel").innerText()).includes(
+      "Saved on invoice",
+    ),
+  );
   for (const title of [
     "Potential duplicate",
     "Vendor payment details changed",

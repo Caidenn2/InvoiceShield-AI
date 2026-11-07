@@ -176,7 +176,7 @@ export function review(
       add(
         "high",
         "Potential duplicate",
-        `Vendor and invoice number match ${h.number} (${h.id.slice(0, 8)}).${h.receipt ? " This record already has a confirmed payment." : ""}`,
+        `Current vendor “${invoice.vendor}” and invoice number “${invoice.number}” match saved invoice “${h.number}” from “${h.vendor}” (${h.id.slice(0, 8)}), after ignoring punctuation and letter case.${h.receipt ? " This record already has a confirmed payment." : ""}`,
         "Compare the original document. Do not pay twice.",
       );
     else if (
@@ -214,7 +214,7 @@ export function review(
       add(
         "high",
         "Vendor payment details changed",
-        `Payment details differ from ${h.number}.`,
+        `Current: “${invoice.paymentDetails}”. Saved on invoice ${h.number}: “${h.paymentDetails}”. The details differ after removing punctuation and spaces; letter case is preserved for wallet addresses.`,
         "Verify the change with a trusted vendor contact.",
       );
   }

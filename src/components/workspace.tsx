@@ -123,6 +123,10 @@ function RiskMeter({ findings }: { findings: ReturnType<typeof review> }) {
               : "No rule-based issues detected"}
         </h3>
         <p>Transparent triage score · not a probability of fraud</p>
+        <p className="score-key">
+          High +40 · Medium +18 · Info +5 per distinct finding type. Repeats
+          count once; maximum 100.
+        </p>
       </div>
     </div>
   );
@@ -699,6 +703,32 @@ export default function Workspace() {
                       {status(findings)}
                     </span>
                   </div>
+                  <div
+                    className="review-flow"
+                    aria-label="Payment review workflow"
+                  >
+                    <span>
+                      <b>01</b> Review invoice
+                    </span>
+                    <span>
+                      <b>02</b> Assess risk
+                    </span>
+                    <span>
+                      <b>03</b> Approve in wallet
+                    </span>
+                    <span>
+                      <b>04</b> Verify on-chain
+                    </span>
+                  </div>
+                  <div className="receipt-shortcut">
+                    <span>
+                      <ScanLine size={16} /> Rules flag the evidence. A real
+                      model explains what to verify.
+                    </span>
+                    <a className="text-button" href="#semantic-review">
+                      Open Semantic AI Review <ArrowRight size={14} />
+                    </a>
+                  </div>
                   <div className="review-grid">
                     <section className="panel invoice-document">
                       <div className="panel-title">
@@ -855,8 +885,17 @@ export default function Workspace() {
                               <h4>{f.title}</h4>
                               <span className="mini-label">{f.severity}</span>
                             </div>
-                            <p>{f.evidence}</p>
-                            <small>{f.action}</small>
+                            <p>
+                              <strong>Observed in your records</strong>{" "}
+                              {f.evidence}
+                            </p>
+                            <p className="indicator-note">
+                              Potential risk indicator · not proof of fraud or
+                              vendor identity.
+                            </p>
+                            <small>
+                              <strong>Verify next</strong> {f.action}
+                            </small>
                           </article>
                         ))}
                         <div className="analysis-note">
@@ -876,7 +915,10 @@ export default function Workspace() {
                           fraud. Confirm vendor identity independently.
                         </p>
                       </section>
-                      <section className="panel payment-panel">
+                      <section
+                        className="panel payment-panel"
+                        id="semantic-review"
+                      >
                         <SemanticReview
                           invoice={current}
                           documentText={current.documentText}
@@ -1008,8 +1050,10 @@ export default function Workspace() {
                             </p>
                             {findings.length > 0 && (
                               <p className="inline-warning">
-                                <AlertTriangle size={15} /> Resolve or
-                                investigate the findings first.
+                                <AlertTriangle size={15} />
+                                {findings.some((f) => f.severity === "high")
+                                  ? "Payment blocked: a high-severity rule needs investigation. Verify the source and correct the invoice or records before proceeding. AI explanations cannot override this safeguard."
+                                  : "Review these indicators and confirm the invoice independently before payment."}
                               </p>
                             )}
                             <button
@@ -1045,7 +1089,7 @@ export default function Workspace() {
                       <div className="eyebrow">YOUR FINANCES, IN FOCUS</div>
                       <h1>
                         {tab === "overview"
-                          ? "A clearer view. A confident next move."
+                          ? "Catch invoice fraud before you pay."
                           : tab === "invoices"
                             ? "Every invoice. One workspace."
                             : "Proof you can verify."}
@@ -1062,6 +1106,22 @@ export default function Workspace() {
                       disabled={!ready || !!storageError}
                     >
                       <Plus size={18} /> Upload invoice
+                    </button>
+                  </div>
+                  <div className="receipt-shortcut">
+                    <span>
+                      <ShieldCheck size={16} /> Already paid on Devnet? Check
+                      the on-chain proof.
+                    </span>
+                    <button
+                      className="text-button"
+                      onClick={() => {
+                        setTab("receipts");
+                        setQuery("");
+                        setFilter("all");
+                      }}
+                    >
+                      Verify an existing transaction <ArrowRight size={14} />
                     </button>
                   </div>
                   {tab === "overview" && (
@@ -1342,12 +1402,12 @@ export default function Workspace() {
                           <h3>
                             {records.length
                               ? "No matching invoices"
-                              : "A fresh start for your finances."}
+                              : "Your first review starts here."}
                           </h3>
                           <p>
                             {records.length
                               ? "Try a different search or filter."
-                              : "Upload your first invoice or explore fictional samples to see the checks in action."}
+                              : "Load the fictional demo set: a legitimate invoice, a duplicate, and changed payment details. Review the evidence, then request a genuine AI explanation. No wallet or payment needed."}
                           </p>
                           {!records.length && (
                             <button

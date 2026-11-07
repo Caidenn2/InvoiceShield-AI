@@ -23,6 +23,24 @@ describe("Invoice verification", () => {
   });
   it("passes consistent invoice arithmetic", () =>
     expect(review(samples[0], [])).toEqual([]));
+  it("shows both sides of a payment-details change without altering its severity", () => {
+    const changed = { ...samples[0], paymentDetails: "NewWalletCaseSensitive" };
+    const finding = review(changed, [samples[0]]).find(
+      (f) => f.title === "Vendor payment details changed",
+    );
+    expect(finding?.evidence).toContain(changed.paymentDetails);
+    expect(finding?.evidence).toContain(samples[0].paymentDetails);
+    expect(finding?.evidence).toContain(samples[0].number);
+    expect(finding?.severity).toBe("high");
+  });
+  it("identifies the compared vendor and reference for duplicate evidence", () => {
+    const finding = review(samples[2], [samples[0]]).find(
+      (f) => f.title === "Potential duplicate",
+    );
+    expect(finding?.evidence).toContain(samples[0].vendor);
+    expect(finding?.evidence).toContain(samples[2].number);
+    expect(finding?.evidence).toContain("ignoring punctuation and letter case");
+  });
   it("detects total and line arithmetic mismatches", () => {
     const f = review(
       {

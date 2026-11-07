@@ -30,7 +30,7 @@ async function main() {
   });
   await page.getByRole("link", { name: "Open your workspace" }).click();
   await page
-    .getByRole("heading", { name: "A clearer view. A confident next move." })
+    .getByRole("heading", { name: "Catch invoice fraud before you pay." })
     .waitFor();
   await page.getByRole("button", { name: "Explore sample invoices" }).click();
   await page

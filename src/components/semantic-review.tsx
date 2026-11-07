@@ -118,12 +118,12 @@ export default function SemanticReview({
     <div className="local-ai-report">
       <div className="local-ai-heading">
         <Cpu size={17} />
-        <h3>AI risk explanation</h3>
+        <h3>Semantic AI Review</h3>
         <span className="mini-label">
           {report
             ? report.cached
               ? "MODEL RESULT · CACHED"
-              : "MODEL RESULT"
+              : "MODEL RESULT · FRESH AT ANALYSIS"
             : "NOT RUN"}
         </span>
         <button
@@ -159,8 +159,12 @@ export default function SemanticReview({
                 <h4>{f.title}</h4>
                 <span className="mini-label">AI · {f.severity}</span>
               </div>
-              <p>{f.evidence}</p>
-              <small>{f.action}</small>
+              <p>
+                <strong>Model explanation</strong> {f.evidence}
+              </p>
+              <small>
+                <strong>Verify next</strong> {f.action}
+              </small>
             </article>
           ))}
         </>

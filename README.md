@@ -2,93 +2,98 @@
 
 **Verify smarter. Pay faster. Prove everything.**
 
-Invoice review and independently verifiable Solana Devnet transfers for small businesses. Built for a beginner hackathon entry: a compact, understandable workflow rather than a custom financial protocol.
+A free-first invoice review workspace with local document reading, explainable risk checks, optional local semantic AI, and wallet-approved Solana Devnet transfers.
 
-## What it does
+## A complete demo without paid APIs
 
-- Upload a PDF, PNG, or JPEG, preview it, and correct extracted invoice fields.
-- Optional OpenAI document interpretation and semantic comparison against summaries of up to 20 recent invoices through a server-only Responses API endpoint with schema validation. Missing values stay null. Invoice content and history are treated as untrusted data.
-- Deterministic checks for required fields, subtotal/tax arithmetic, quantity × price, line totals, exact duplicates, similar invoices, unusual amounts, and changed vendor payment details.
-- Invoice history in localStorage and original documents in IndexedDB. Export history as JSON. Nothing is shared across devices or users.
-- Connect a Solana Wallet Standard compatible wallet through wallet adapter, view its Devnet balance, and explicitly approve a separate test SOL transfer.
-- Verify RPC network identity, confirmation, sender signature, transfer recipient, and amount before showing a confirmed receipt. Print or open the transaction on Explorer.
-- Samples are clearly fictional. No AI run or blockchain transfer is simulated as real.
+- PDF text extraction with PDF.js and image/scanned-PDF OCR with Tesseract.js run in your browser. Workers and English recognition data are served by this app; documents are not sent to an OCR service.
+- Field mapping preserves unknown values as blank. Users can correct fields or paste document text. This is a limited pattern parser, not universal invoice understanding.
+- Deterministic rules check arithmetic, exact/near duplicates, changed payment details, unusual amounts, missing fields, urgent/secret payment requests, and embedded review instructions.
+- A transparent 0–100 rule-based review-priority score helps triage invoices. It is not a probability of fraud. High findings count 40 points per category, medium 18, informational 5; repeated findings in one category count once.
+- Optional Ollama analysis adds a separately labeled semantic report. When no model ran, the interface says so. Local OCR performs text recognition, not a semantic fraud verdict.
+- OpenAI remains optional and is disabled by default, even when a key is present. No API credits are required for the demo.
+- Wallet Standard connection, Devnet balances, explicitly approved test SOL transfers, confirmation checks, and matched on-chain receipts. No private key or seed phrase is requested or stored.
 
 ## Run locally
 
-Requires Node.js 20.9+ and pnpm 10.11.0. Node 24 was used for local checks.
+Use Node 24 and pnpm 10.11.0.
 
-```sh
-corepack enable
-pnpm install --frozen-lockfile
-cp .env.example .env.local
-pnpm dev
-```
+    corepack enable
+    pnpm install --frozen-lockfile
+    pnpm dev
 
-Open [the local app](http://127.0.0.1:3000). On Windows, copy `.env.example` to `.env.local` using File Explorer or `Copy-Item .env.example .env.local`.
+Open http://127.0.0.1:3000. No environment variables are needed for the free demo. The dev/build scripts prepare local PDF and OCR worker assets automatically. The English OCR model is included in the repository.
 
-The application works without an AI key through manual entry and deterministic checks. For document extraction, set `OPENAI_API_KEY` on the server. `OPENAI_MODEL` defaults to `gpt-4.1-mini`; choose an account-accessible model supporting image/PDF input and Structured Outputs. Configure `INVOICE_ANALYSIS_TOKEN` for public deployments and enter it in the upload dialog. It is required for paid extraction in production. Never put the API key in a `NEXT_PUBLIC_` variable or commit `.env.local`.
+If pnpm is already installed, Corepack setup is unnecessary. Windows PowerShell can copy the optional configuration with: Copy-Item .env.example .env.local.
 
-## Try the demo
+## Two-minute guided demo
 
-1. Open the workspace and choose **Explore sample invoices**.
-2. Open Forma Studio invoice 104 to inspect the exact duplicate warning. Open invoice 105 to inspect the near duplicate warning.
-3. Use the fictional Nimbus Cloud invoice for a clean review, or upload [the normal invoice image](public/samples/normal.png) with AI configured. [Exact duplicate](public/samples/exact-duplicate.png) and [near duplicate](public/samples/near-duplicate.png) images are also included.
-4. Connect your wallet and switch its display to **Solana Devnet**. Get test SOL from [Solana Faucet](https://faucet.solana.com/).
-5. Choose **Review test payment**, enter an independently confirmed recipient wallet, set a separate test SOL amount (e.g. 0.01), check the approval box, and sign in your wallet.
-6. Wait for confirmation and matching receipt verification. If RPC availability is delayed, use **Verify submitted transfer**. Do not send a second payment to resolve a timeout.
+1. Open the dashboard. Select Upload invoice, choose public/samples/normal.png, and click Extract for free. This performs real local OCR. Review and save the fields.
+2. Select Catch a suspicious duplicate in the guided demo. The fictional sample has a matching invoice number, changed payment details, and urgent instructions. Findings are live deterministic results, not prerecorded AI output. High-severity findings block payment.
+3. Select Review a legitimate invoice for the clean fictional Nimbus Cloud record.
+4. Connect a compatible Solana wallet, switch its display to Devnet, and get test SOL from https://faucet.solana.com/.
+5. Select Approve a real Devnet transfer. Enter an independently confirmed recipient and a separate test SOL amount, check the explicit confirmation, and sign in your wallet.
+6. Wait for RPC confirmation and sender/recipient/amount matching. Inspect Explorer and print the receipt. If verification is delayed, retry the same signature; do not send another payment.
 
-Sample loading does not run AI. To demonstrate actual AI extraction, upload a sample image with the server key configured. Samples 104 and its exact copy both flag each other once saved. High-severity findings block payment. The Nimbus sample has no duplicate.
+The invoice can be in USD while the demo transfer is in test SOL. This transfer does not settle the invoice's fiat value. A transfer receipt does not prove a vendor's identity. The app never simulates a successful payment.
 
-## Validation
+Downloadable PNG samples include normal, exact-duplicate, near-duplicate, and suspicious-duplicate. The guided samples are fictional, prefilled scenario data. Loading them does not claim OCR or a semantic model ran.
 
-```sh
-pnpm test
-pnpm typecheck
-pnpm build
-pnpm start
-```
+## Optional free semantic AI
 
-See [verification status](docs/VERIFICATION.md) for observed results and checks still requiring credentials or wallet approval. The payment unit tests use mocked RPC and signatures from ephemeral test keypairs; they do not prove a live Devnet transaction happened.
+Ollama is not required to run the demo. It was not installed/running on the development computer during verification. See docs/FREE-DEMO.md for optional setup and limitations.
 
-Browser smoke testing is provided by `pnpm test:browser`. It uses installed Edge by default; set `BROWSER_EXECUTABLE` for another installed Chromium browser. The script expects a running local server at port 3000 and no AI key for its fallback assertion. It never signs payments. Run `pnpm samples` to regenerate the fictional PNGs and SVG source assets.
+Install Ollama from https://ollama.com/download/windows, then run:
 
-## Architecture
+    ollama pull qwen2.5:1.5b
+    ollama serve
 
-Next.js App Router + TypeScript, Tailwind CSS with a shared fintech design system, Radix Dialog for focus-managed dialogs, and Lucide icons. The only custom backend endpoint is `POST /api/analyze`. AI input is bounded and checked against file signatures and declared MIME type. OpenAI structured output is validated with Zod. Deterministic invoice checks run locally and compare the current browser’s records.
+The model download is roughly 986 MB; performance depends on your hardware. OLLAMA_MODEL can select another installed model. The app checks for the configured local model and enables Analyze with Ollama when available. Only extracted text and a bounded summary of local history go to the local process. Results are schema validated and shown separately from rules.
 
-Solana wallet adapter discovers installed Wallet Standard wallets. `@solana/web3.js` creates a System Program transfer on the hardcoded Devnet RPC. A genesis-hash check refuses other networks. The application receives a signed transaction from the wallet, persists its signature before broadcast, then checks confirmation and queries parsed on-chain transfer details. Invoice data never goes into a memo or any other instruction.
+A hosted Vercel function cannot reach Ollama on your laptop. The public deployment uses free browser extraction and rule-based review; optional local semantic AI is for the local development server. Never expose Ollama publicly to work around that boundary.
 
-Payment duplication protection uses an in-flight guard, a cross-tab Web Lock, and a persisted pending/confirmed record. This prevents accidental repeats in the same browser profile. It is **not** a multi-user payment ledger or protection against clearing browser storage. Production team use needs authenticated, durable server records and server-side idempotency.
+## Optional OpenAI provider
 
-## Security and limitations
+The server endpoint is retained for future use, but ENABLE_OPENAI defaults to false. To opt in separately, the owner must explicitly set ENABLE_OPENAI=true, OPENAI_API_KEY, and INVOICE_ANALYSIS_TOKEN and use the optional cloud button. It may consume paid API credits. It is not used by the free-demo tests. The committed Vercel configuration disables it.
 
-- Devnet test SOL only. The separately approved SOL amount does not settle the invoice’s USD value. Transfer proof does not verify a vendor’s identity.
-- Review findings are evidence to investigate, not a fraud verdict or a guarantee of safety. Duplicate comparisons cover only local history; vendor normalization and similarity rules can produce false positives or miss altered documents.
-- Monetary checks currently use two-decimal rounding. Review currencies with other minor-unit conventions manually.
-- AI can misread fields. All extracted values require human review. No OCR fallback runs without AI credentials; manual entry remains available for every supported document type.
-- Local browser records are not an authenticated accounting system. Device users can modify them. Export excludes original documents. Clearing browser data removes invoice and payment history. Back it up before clearing data.
-- A signed but unbroadcast or failed transfer remains locked as pending conservatively. Inspect Explorer / RPC and export the record for diagnosis; the app does not offer an unsafe reset-and-pay-again button.
-- Public Devnet RPC is rate limited and can be unavailable. Receipt confirmation may need retries. Only on-curve wallet recipients are accepted; PDA recipients are intentionally excluded.
-- The AI access token is shared demo access control, not user authentication. Keep it private, set an OpenAI project spend cap, and rotate it after judging. Production business use needs real authentication, durable rate limits, and account isolation.
-- No custom smart contract, escrow, lending, yield, or on-chain invoice storage. DeFi track eligibility has not been established.
+Credentials stay server-only in the ignored .env.local file. They must never be placed in NEXT_PUBLIC variables. The configured key previously reached OpenAI but returned credit_balance_exhausted; successful live OpenAI extraction is not claimed.
 
-## Deployment and submission
+## Tests and observed status
 
-See [Vercel deployment](docs/DEPLOYMENT.md), [demo script](docs/DEMO.md), [submission draft](docs/SUBMISSION.md), and [AI development disclosure](docs/AI-DISCLOSURE.md).
+    pnpm test
+    pnpm typecheck
+    pnpm build
+    pnpm start
 
-No deployment URL is claimed until Vercel account authorization and live checks are complete.
+With a server running on port 3000:
 
-## Screenshots
+    pnpm test:free-demo
+    pnpm test:browser
 
-Browser screenshots are stored under `docs/screenshots/`. They show fictional sample data and must not be used to imply a live payment or live AI test occurred.
+The free-demo browser test performs actual PNG/JPEG OCR and PDF extraction, checks fields against fictional fixtures, inspects suspicious findings, and asserts no cloud AI calls. Browser tests use installed Microsoft Edge by default; BROWSER_EXECUTABLE can select another Chromium browser.
 
-![InvoiceShield landing page](docs/screenshots/landing.png)
-![InvoiceShield dashboard with fictional sample data](docs/screenshots/dashboard.png)
-![Invoice review and duplicate findings](docs/screenshots/review.png)
+See docs/VERIFICATION.md for actual results and remaining live-wallet/deployment checks. Unit tests use mocked RPC and local-model responses. They are not evidence that a live wallet signed a payment or that Ollama ran.
 
-## License
+## Architecture and boundaries
 
-Original project code is MIT licensed. Dependencies retain their respective licenses; see the lockfile for exact installed versions. Invoice samples are fictional project assets.
+Next.js App Router, TypeScript, Tailwind CSS, Radix Dialog, Lucide icons, PDF.js, Tesseract.js, Zod, Solana wallet adapter, and the Solana JavaScript SDK. Records live in localStorage; original documents live in IndexedDB. JSON export excludes original files. Clearing browser data removes history. There is no shared multi-user accounting backend.
 
-Implementation references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [OpenAI file inputs](https://developers.openai.com/api/docs/guides/file-inputs), [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), and [Solana payment RPC guidance](https://solana.com/docs/payments/interacting-with-solana).
+The payment path checks the full Devnet genesis hash, builds a System Program transfer, verifies that the wallet-signed message matches the approved message, persists its signature before broadcasting, and verifies confirmation plus actual transfer details. Network errors can retry receipt lookup without creating another transaction. Cross-tab Web Locks, in-flight guards, and persisted pending records prevent accidental resubmission in one browser profile. They do not provide durable multi-user idempotency.
+
+Upload limits: 4 MB, at most five PDF pages, English OCR. Layout variation and poor scans can cause missing or misread fields. Monetary rules currently use two-decimal rounding. Similarity and suspicious-request rules can generate false positives and miss altered invoices. A zero score does not establish safety or authenticity.
+
+Signed but unbroadcast/failed transactions remain conservatively pending for inspection; the app offers no unsafe reset-and-pay-again shortcut. Public Devnet RPC is rate limited. Only on-curve wallet recipients are accepted. No custom contract, escrow, lending, yield, or real-funds settlement is implemented.
+
+## Submission materials
+
+- docs/DEMO.md: free two-minute script and judge questions.
+- docs/DEPLOYMENT.md: free Vercel deployment checklist.
+- docs/SUBMISSION.md: honest submission draft and award positioning.
+- docs/AI-DISCLOSURE.md: development and runtime AI disclosure.
+- docs/FREE-DEMO.md: local-model setup and fallback matrix.
+
+![Dashboard with fictional sample data](docs/screenshots/dashboard.png)
+![Real local OCR extraction](docs/screenshots/free-extraction.png)
+![Suspicious invoice review](docs/screenshots/suspicious-review.png)
+
+Original code is MIT licensed. Adapted wallet styling, PDF/OCR software, and OCR language data retain their respective licenses; see third-party/README.md.

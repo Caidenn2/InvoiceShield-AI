@@ -10,7 +10,7 @@ Users upload invoice documents, review extracted or manually entered fields, ins
 
 ## How it was built
 
-Next.js and TypeScript power the frontend and a small server-side extraction endpoint. OpenAI interprets documents with structured output. Zod validates fields. Deterministic rules check arithmetic, duplicates, changed payment details, and unusual values. Wallet adapter and the Solana JavaScript SDK support wallet-approved Devnet transfers. Browser storage keeps the hackathon implementation lightweight. Radix dialogs, Lucide icons, Tailwind, and a custom visual system support a consistent interface.
+Next.js and TypeScript power the application. PDF.js and a local Tesseract recognition model read documents in the browser without paid API calls. A limited pattern mapper fills editable fields. Deterministic rules check arithmetic, duplicates, changed payment details, unusual values, and suspicious requests, with an explicitly non-probabilistic review-priority score. Optional Ollama analysis has a separate semantic-report section and an honest NOT RUN state. Zod validates inputs and model reports. Wallet adapter and the Solana JavaScript SDK support wallet-approved Devnet transfers. Browser storage, Radix dialogs, Lucide icons, Tailwind, and a custom visual system keep the implementation focused. OpenAI is optional and disabled by default.
 
 ## Challenges
 
@@ -18,7 +18,7 @@ Separating AI interpretation from reliable calculations; preserving nulls for un
 
 ## Accomplishments
 
-Implemented an integrated invoice review and Devnet transfer workflow with an accessible dialog foundation, fictional sample invoices, explicit fallback behavior when AI is unavailable, deterministic review tests, and mocked-RPC payment tests. Consult VERIFICATION.md before claiming live AI, wallet, payment, browser, or deployment success.
+Implemented an integrated free invoice review and Devnet transfer workflow. Actual browser tests extracted PNG/JPEG invoices with local OCR and read a PDF fixture, checked values, exercised suspicious findings, and asserted no cloud AI calls. Unit tests cover rules, provider validation, and mocked-RPC payment behavior. Consult VERIFICATION.md before claiming live Ollama inference, a wallet-approved payment, or deployment success.
 
 ## What was learned
 
@@ -30,6 +30,6 @@ Authenticated team workspaces, durable payment intents with server-enforced idem
 
 ## Award positioning
 
-Best Beginner Hack is the primary positioning: a useful, understandable workflow with clear technical boundaries. AI track claims require demonstrating real extraction with a configured API key. Overall positioning depends on a polished, verified public demo. Do not claim DeFi eligibility: this app currently implements invoice review and transfers, not lending, liquidity, yield, or another established DeFi protocol. Check the event’s actual criteria before selecting tracks. No award or eligibility is claimed here.
+Best Beginner Hack is the primary positioning: a useful, understandable, free workflow with transparent technical boundaries. AI track discussion should distinguish actual local neural OCR from deterministic checks and optional semantic reasoning. Demonstrate an actual local model report before claiming live Ollama inference. Overall positioning depends on a polished, verified public demo with a real wallet-approved Devnet payment. Do not claim DeFi eligibility: this app implements review and transfers, not lending, liquidity, yield, or another established DeFi protocol. Check the event’s actual criteria before selecting tracks. No award or eligibility is claimed here.
 
 AI development assistance is disclosed in AI-DISCLOSURE.md. Add the actual deployment URL, final demo video, screenshots, and final tested commit before submission.

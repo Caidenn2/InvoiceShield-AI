@@ -1,27 +1,33 @@
-# 110-second demo script
+# Two-minute demo: entirely free
 
-Rehearse on the deployed URL with a funded Devnet wallet, a recipient wallet address you independently confirmed, and AI already configured. Have the access token ready. Do not record private wallet information or the API key. If these prerequisites are unavailable, describe the limitation honestly rather than replacing a live transaction with a fake success.
+Prerequisites: app running locally or on a free deployment, compatible wallet with Devnet test SOL, and an independently confirmed recipient. No paid API key or access token is needed. Rehearse the wallet steps; Devnet confirmation can take longer than the target video window. Never replace a delayed transaction with a fake success.
 
-**0–15 seconds — Problem.** “A duplicate invoice can look completely ordinary. InvoiceShield AI gives small businesses a second pair of eyes before money moves, and verifiable proof afterward.” Open the landing page and launch the workspace.
+**0–15 seconds — Problem.** “A duplicate invoice can look ordinary. InvoiceShield gives small businesses a second pair of eyes before money moves and independent proof afterward.” Show the landing page, then open the workspace.
 
-**15–40 seconds — Real extraction.** Upload `public/samples/normal.png`, select Extract with AI, and show the populated fields. “AI reads the document; I review what it extracted. Unknown fields stay blank.” Save the record. If no AI key is available, say “AI is not configured in this demo; these fields are manually entered,” and use the deterministic path explicitly.
+**15–40 seconds — Actual free extraction.** Upload normal.png and click Extract for free. “This is real text recognition on my device, with no paid API. The extracted values are editable; unknown values stay blank.” Show vendor, reference, totals, and line items. Save.
 
-**40–60 seconds — Duplicates.** Upload `exact-duplicate.png` using AI, save, and open the duplicate finding. “The vendor and invoice number match an earlier record. This check works without AI and blocks payment.” If time is short, use loaded fictional samples and clearly identify them.
+**40–65 seconds — Risk and evidence.** Select Catch a suspicious duplicate. “The invoice number matches an earlier record. Payment details changed, and the document demands an urgent transfer. These are deterministic findings with visible evidence. The score prioritizes review; it is not a fraud probability.” Show that payment is blocked. Identify the record as fictional sample data.
 
-**60–75 seconds — Clean invoice.** Open the clean fictional Nimbus Cloud sample. “Here the fields and arithmetic agree. This is a review aid, not a guarantee of authenticity.” Select Review test payment and connect the wallet.
+**65–80 seconds — Legitimate record.** Select Review a legitimate invoice. “The Nimbus Cloud sample has complete fields and consistent arithmetic. No detected issue is not a guarantee of authenticity. I still verify the recipient independently.” Connect the Devnet wallet.
 
-**75–100 seconds — Actual Devnet transfer.** Enter the confirmed recipient and 0.01 test SOL, approve the explicit confirmation, then sign in the wallet. “The invoice is in USD, but this is a separate test SOL demonstration. It does not settle the dollar invoice.” Wait for real confirmation. Allow additional time if Devnet RPC is slow; never substitute a fake confirmation.
+**80–110 seconds — Real transfer.** Select Approve a real Devnet transfer, enter the recipient and 0.01 test SOL, explicitly confirm, and sign in the wallet. “This is a real Devnet transfer using test funds. It does not settle the invoice's USD value. The app never signs for me.” Wait for actual confirmation.
 
-**100–110 seconds — Proof.** Show the receipt and Explorer. “InvoiceShield checks the confirmed transfer’s sender, recipient, and amount against what I approved. No invoice details are written on-chain. Verify smarter. Pay faster. Prove everything.”
+**110–120 seconds — Proof.** Open the verified receipt and Explorer. “The sender, recipient, and amount are checked against the blockchain. No invoice details go on-chain. Verify smarter. Pay faster. Prove everything.”
+
+## AI explanation for judges
+
+Local OCR performs neural text recognition. PDF text extraction and field mapping are distinct from semantic reasoning. Rules handle arithmetic, duplicates, changed details, and suspicious instructions. Optional Ollama can add a separately labeled semantic report when a local model is installed and has actually completed a request. If it is not available, say exactly that. Do not claim that rule-based findings came from a language model.
+
+For an AI-track demonstration with Ollama, preinstall and warm the model before recording, run it on the local server, and show the returned report and model label. Its integration is not a claim of successful model inference until tested on the owner's computer.
 
 ## Judge questions
 
-**Why Solana?** The payment is a real Devnet System Program transfer. Its confirmation and transfer data can be checked independently of the application. There is no unnecessary custom contract.
+**Why Solana?** A wallet-approved Devnet System Program transfer produces independently inspectable payment evidence. There is no unnecessary custom contract.
 
-**What is AI doing?** Interpreting PDF/image content and explaining extraction uncertainties. Arithmetic and duplicate rules are deterministic. AI never authorizes payments.
+**Does the app detect proven fraud?** No. It identifies review signals. Vendor identity and invoice authenticity require independent verification.
 
-**What is stored?** Records in this browser’s localStorage, originals in IndexedDB. Only a SOL transfer goes on-chain. A future team product needs authenticated, durable storage.
+**What stops duplicates?** Rule checks compare browser history. Payment submission uses a persistent pending record, a cross-tab lock, and an in-flight guard. Production team use needs authenticated, durable records and server-enforced idempotency.
 
-**What prevents paying twice?** A persisted pending record, a per-browser cross-tab lock, and an in-flight guard. This is accidental-duplicate protection in a single browser, not a shared accounting ledger.
+**Where is data stored?** In this browser. Original documents stay in IndexedDB. OCR runs locally; optional Ollama receives text on the same development computer. Only the approved transfer goes on-chain.
 
-**Does a receipt prove an invoice is legitimate?** No. It proves a matching transfer occurred on Devnet. Business identity and invoice authenticity still require human verification.
+**What is free?** PDF reading, local OCR, rules, sample scenarios, optional local Ollama inference, and Devnet test funds. Public hosting requires an account that qualifies for the chosen free plan. OpenAI is disabled and unnecessary.

@@ -1,32 +1,28 @@
 # Verification status
 
-## Observed locally
+## Verified free workflow
 
-- `vitest run`: 34 tests passed across invoice, upload endpoint, and payment suites.
-- `tsc --noEmit`: passed.
-- `next build`: passed; `/`, `/dashboard`, and `/api/analyze` built successfully.
-- `next dev --hostname 127.0.0.1`: started successfully.
-- HTTP GET `/` and `/dashboard`: returned 200.
-- Production server (`next start`): started successfully.
-- Headless Edge browser regression against the production server: passed landing navigation, sample loading, exact and near duplicate findings, PNG upload preview, honest missing-key AI fallback, manual field entry and saving, no-wallet payment gating, reload persistence, mobile navigation, and no page errors.
-- Mobile viewport at 390 × 844: no page-wide horizontal overflow. Invoice tables scroll within their card. Landing, dashboard, review, and mobile screenshots were captured; mobile and review screenshots were visually inspected after fixes.
-- Live read-only Solana Devnet RPC `getGenesisHash`: returned `EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG`, matching the network safeguard. This is not a transaction test.
-- `git diff --check`: passed.
+- 54 unit tests pass across invoice validation/arithmetic/duplicates, local field mapping, suspicious payment requests, risk scoring, optional local-model endpoint validation, private diagnostics, cloud opt-in behavior, and payment safeguards.
+- TypeScript passes and the Next.js production build succeeds with the local PDF/OCR assets prepared.
+- Actual browser tests on fictional fixtures pass for PNG/JPEG OCR and PDF extraction. Vendor, reference, dates, subtotal, tax, total, and line items were checked against known values in the PNG fixture. PDF/JPEG vendor and total were also checked.
+- Free-demo tests assert no OpenAI/cloud-analysis requests. Semantic AI is explicitly NOT RUN when Ollama is absent.
+- Guided duplicate review detects the matching reference, changed payment details, and suspicious urgent instructions. High rule-based findings block payment.
+- Desktop/mobile browser smoke checks pass for landing navigation, samples, upload preview, disabled cloud provider, manual entry, saving, reload persistence, and payment gating. The payment dialog closes before the separate wallet selector opens; opening and closing that selector was verified. No page errors or page-wide mobile overflow were observed at 390 x 844.
+- Local development and production servers start successfully. GET / and /dashboard return 200.
+- The configured .env.local contains both existing credential variables, is ignored by Git, and is not tracked. Exact-value scans found neither credential in tracked source or browser static assets. Values were not displayed.
+- Read-only live Devnet identity and latest-blockhash RPC checks pass. The full genesis hash matches the pinned Devnet guard. Receipt readers now opt in to transaction version 1 supported by the locked SDK.
+- Payment tests cover wallet rejection, wallet-modified messages, persisted signatures before broadcast, failed confirmation, delayed lookup retries, transport-error recovery, and sender/recipient/amount matching. These are mocked-RPC tests, not live wallet approvals.
 
-These results apply to the implementation checked during development; rerun after changes.
+## External or optional checks still outstanding
 
-## Still requires external verification
+- A compatible installed wallet must be connected and funded with Devnet test SOL. The owner must confirm a recipient, approve a transfer in the wallet, and inspect the resulting confirmed receipt. No app-submitted real payment has been claimed.
+- Read-only sampling of recent public transactions did not find a suitable direct transfer; it was not used to seed a receipt or presented as an InvoiceShield payment.
+- Ollama was not installed/running. Optional semantic inference is not live-verified. The complete free demo does not depend on installing it.
+- An earlier explicitly requested OpenAI call reached the provider but returned credit_balance_exhausted. The current free build disables OpenAI by default and requires no funding. Successful live OpenAI extraction is not claimed.
+- GitHub push authorization, Vercel account/repository connection, free deployment, public URL checks, and final two-minute wallet rehearsal remain pending owner actions.
 
-- Actual OpenAI PDF and image extraction: no API credentials supplied.
-- Wallet discovery, connection, balance, signing, and a real Devnet transfer: requires an installed compatible wallet, test funds, confirmed recipient, and owner approval.
-- Live receipt matching: requires that real confirmed transfer.
-- Vercel deployment and public judging URL: requires owner account authorization and environment setup.
-- End-to-end demo duration: rehearse after live extraction and payment are enabled.
+## Honest demo boundaries
 
-Original document preview was exercised with PNG. PDF and JPEG model-content routing is covered by mocked endpoint tests; actual model interpretation of those formats remains unverified.
+Fictional samples contain prepared data. Loading them does not imply OCR or semantic analysis ran. Actual OCR tests are listed separately above. No successful blockchain receipt is preloaded. A score of zero is not a safety guarantee or a fraud probability.
 
-## Development handoff
-
-The implementation and documentation are committed locally. GitHub pushing and Vercel publication have not been authorized or performed. The application is not yet declared ready for judging because the live AI, wallet transaction, receipt, and deployment acceptance checks remain outstanding.
-
-Do not describe mocked RPC tests as a successful blockchain transfer. Do not describe sample loading as a successful AI analysis.
+Production-browser checks should be rerun after material application changes. A local build is not evidence that public deployment succeeded.

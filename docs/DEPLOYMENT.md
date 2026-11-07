@@ -1,23 +1,29 @@
-# Deploy to Vercel
+# Free Vercel deployment
 
-1. Push the committed repository to `Caidenn2/InvoiceShield-AI` when the owner authorizes pushing. The project is configured for Next.js with a pnpm lockfile.
-2. Sign in to Vercel and import that GitHub repository. Use the repository root, the detected Next.js preset, Node 24, `pnpm install --frozen-lockfile`, and `pnpm build`.
-3. Add server-only environment variables: `OPENAI_API_KEY`, optional `OPENAI_MODEL` (default `gpt-4.1-mini`), and a strong private `INVOICE_ANALYSIS_TOKEN`. The token is required to enable paid AI extraction in production. Configure an OpenAI project spending cap as well. Do not paste secrets into the repository, browser console, or chat.
-4. Deploy. Record only the actual URL returned by Vercel. Disable deployment protection for the judging URL if required; the owner should choose the desired public access setting.
-5. On the HTTPS deployment, open `/` and `/dashboard`. Upload a fictional PNG and PDF, check AI extraction, correct a value, save it, reload, and confirm history persists. Repeat on a mobile-sized viewport.
-6. Install/use a Wallet Standard compatible Solana wallet, switch it to Devnet, fund it with faucet test SOL, connect, verify the balance, confirm a recipient you control, and approve a small test transfer. Check the receipt against Solana Explorer with `cluster=devnet`.
-7. Print the receipt and rehearse the two-minute demo using the deployed URL.
+The app is prepared for a free personal Vercel deployment. Do not upgrade a plan, add paid services, or enable OpenAI for this demo.
 
-## Hosting constraints
+1. Obtain owner authorization to push this repository to Caidenn2/InvoiceShield-AI. Connect the owner's GitHub repository to Vercel using the Vercel integration or account UI.
+2. Choose the free personal plan only if the project/account qualifies. Stop if the provider requires a paid plan or payment authorization.
+3. Import the repository root with the Next.js preset and Node 24. Install with pnpm install --frozen-lockfile and build with pnpm build. The build script copies PDF/OCR workers from installed packages. The English recognition data is already committed.
+4. No secrets or environment variables are required for the free demo. vercel.json sets ENABLE_OPENAI=false. Do not upload the existing .env.local or configure the OpenAI key on the free deployment.
+5. Deploy and record only the actual returned URL. The owner must choose public judging access or adjust deployment protection if necessary.
+6. On the public HTTPS URL, upload fictional PNG, JPEG, and PDF invoices. Click Extract for free, review fields, save, reload, inspect duplicate/risk findings, and check mobile layout.
+7. Connect a Devnet wallet, fund it with test SOL, confirm a recipient, approve a small transfer, and compare the receipt with Solana Explorer using cluster=devnet. Rehearse the two-minute demo.
 
-This is a server-backed Next.js app. Do not use a static export: it would remove the AI endpoint. Uploads are limited to 4 MB to fit below [Vercel's documented 4.5 MB function payload limit](https://vercel.com/docs/functions/limitations). Use direct-to-object-storage uploads before supporting larger production documents. AI timeout is 45 seconds and the route declares a 60-second maximum; check the selected Vercel plan’s limits.
+## Runtime boundaries
 
-History is browser-local; Vercel redeploys do not provide a shared database. Changing hostname creates a different local workspace. Do not promise judges that records will follow them across devices.
+Browser extraction and rule-based review work on the public deployment without paid services. The server's localhost address is the hosting machine, not the visitor's laptop. Therefore Ollama analysis is deliberately unavailable on Vercel. Use the local development server for optional local semantic AI.
 
-## Required owner actions
+This remains a server-backed Next.js deployment with optional provider endpoints; no paid backend database is needed. History is browser-local and does not follow users across devices or hostnames. There is no shared team ledger.
 
-- Provide the OpenAI key privately through `.env.local` or the Vercel environment UI.
-- Authorize the GitHub push and Vercel account/repository connection.
-- Approve the live Devnet transaction in the wallet. No private key or seed phrase is needed by this app or by Codex.
+Documents are capped at 4 MB and five PDF pages. This is below Vercel's documented 4.5 MB function payload limit, although the default extraction path reads files in the browser rather than uploading them to a function. English OCR model/worker assets are served statically. Avoid enabling telemetry or cloud integrations that incur charges.
 
-The local build is deployment preparation, not evidence of a successful public deployment.
+## Account actions still required
+
+- Authorize the repository push if it has not already been authorized.
+- Install/connect Vercel and select a free eligible account/project.
+- Approve the real Devnet transaction in the wallet.
+
+Local builds do not prove a public deployment succeeded. Never invent a URL or claim an owner-approved payment occurred before it is confirmed.
+
+References: https://vercel.com/docs/plans/hobby and https://vercel.com/docs/functions/limitations.

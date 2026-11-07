@@ -1,9 +1,18 @@
-# AI development disclosure
+# AI development and runtime disclosure
 
-InvoiceShield AI was developed with OpenAI Codex assistance for application architecture, code, interface design, deterministic checks, Solana integration, tests, documentation, and fictional demo assets. The project owner is responsible for reviewing the implementation and complying with the event’s actual submission rules.
+InvoiceShield AI was developed with OpenAI Codex assistance for architecture, code, design, tests, fictional assets, and documentation. The owner is responsible for reviewing the implementation and checking actual event rules.
 
-At runtime, optional OpenAI Responses API document extraction interprets uploaded invoices and returns schema-validated fields and uncertainty explanations. AI is not used to sign or initiate transfers. Required-field checks, arithmetic, duplicate heuristics, and receipt matching are deterministic code. Sample data and manual entry do not imply an AI model ran.
+## Runtime provenance
 
-AI-generated code and extraction results may contain errors. The verification report does not establish authenticity or prove fraud. Human review, recipient verification, and wallet approval remain necessary.
+- PDF.js reads existing PDF text; it is not semantic AI.
+- Tesseract.js runs a local OCR recognition model to turn images or scanned PDF pages into text. It does not decide whether an invoice is fraudulent.
+- Explicit pattern mapping extracts fields from recognized text. Unknown values remain blank, and humans can correct them.
+- Arithmetic, duplicate matching, changed payment details, unusual amounts, suspicious requests, embedded instructions, and review-priority scoring are deterministic rules. Their findings are labeled RULE-BASED.
+- Optional Ollama inference can produce a separately labeled local semantic report. No report is shown as live unless the model actually returns validated output. Ollama was not installed/running on the development computer during verification; its endpoint integration is covered by mocked tests, not claimed as successful local inference.
+- Optional OpenAI extraction is retained but disabled by default and unnecessary for the free demo. A configured key previously returned an exhausted-credit error. Successful live OpenAI extraction is not claimed, and no funding is required for the current demo.
 
-Live AI behavior is unverified until a configured API key is used successfully with a real sample upload. Live blockchain behavior is unverified until an owner-approved Devnet payment is confirmed and its receipt is inspected. Tests using mocked RPC responses are identified as unit tests.
+Fictional samples are labeled as samples. Loading them does not run OCR or AI. Real OCR/browser tests use project fixtures and make no cloud AI calls. Wallet unit tests use mocked RPC responses and ephemeral test keys; they do not prove a real payment happened.
+
+The application never requests private keys, signs without the connected wallet, autonomously initiates payments, writes invoice details on-chain, or simulates a successful transfer as real. A receipt requires matching confirmed blockchain data. A live owner-approved payment and public deployment must be verified separately before judging readiness is declared.
+
+AI and OCR can misread documents. Rule-based signals are not fraud verdicts. A zero risk score is not a guarantee of safety, and the score is not a fraud probability.

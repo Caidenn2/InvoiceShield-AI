@@ -92,6 +92,9 @@ async function main() {
     .getByText("Payment blocked: a high-severity rule", { exact: false })
     .waitFor();
   await page.getByRole("heading", { name: "Semantic AI Review" }).waitFor();
+  await page.getByRole("link", { name: "Open Semantic AI Review" }).click();
+  assert.equal(new URL(page.url()).hash, "#semantic-review");
+  assert.ok(await page.locator("#semantic-review").isVisible());
   assert.ok(
     (await page.locator(".verification-panel").innerText()).includes(
       "Saved on invoice",

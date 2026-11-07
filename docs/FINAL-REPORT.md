@@ -1,5 +1,27 @@
 # Final technical verification report
 
+## Focused polish pass — November 6, 2026 (Pacific)
+
+Tested application commit: d31fa26645bfec4c7d4e6874381ece65772baaa3. Vercel's public health endpoint matched this commit, with hostedFreeAIConfigured=true and paidOpenAIEnabled=false. Subsequent documentation/browser-assertion-only commits do not alter the tested application.
+
+| Requirement                          | Result                                                                                                                                                                                                                                                                           |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Human-readable fraud evidence        | PASS: duplicate vendor/reference comparison, current versus saved payment details, matched urgency text, and practical verification steps. Observations are distinguished from potential fraud indicators.                                                                       |
+| Deterministic scoring and safeguards | PASS: unchanged scoring conditions and weights; clean sample 0/100, suspicious sample 100/100. Score weights and repeated-finding behavior are explained.                                                                                                                        |
+| Genuine Groq AI showcase             | PASS: fresh public browser inference generated four findings at 2026-11-07T07:26:27.687Z (November 6 Pacific). Larger Semantic AI Review text, provider/model/time, explicit fresh/cached labels, recommendations, and a working direct shortcut. No model output was simulated. |
+| Free-tier behavior                   | PASS: existing consent, rate limits, cache, error fallback, and rule separation retained. Cached replay passed. No billing change or paid provider call.                                                                                                                         |
+| Solana workflow                      | PASS: Review → Assess risk → Approve in wallet → Verify on-chain; clear high-risk blocking explanation and discoverable read-only receipt lookup. No signing logic change.                                                                                                       |
+| Existing confirmed transfer          | PASS: actual saved receipt and fresh-browser signature lookup verified on public Devnet; zero new payment submissions.                                                                                                                                                           |
+| UI polish                            | PASS: requested headline, clearer empty state/sample entry, navy/mint styling retained, desktop and 390px mobile layouts passed without page errors or overflow.                                                                                                                 |
+| Tests                                | PASS: all 81 existing tests plus two new evidence tests, 83 total across nine files. TypeScript and production build passed.                                                                                                                                                     |
+| Public browser regressions           | PASS: homepage/dashboard, validation and payment gates, real PNG/JPEG OCR and PDF extraction without model calls, persistence, wallet selector, AI output/cache, mobile, and receipts.                                                                                           |
+| Secrets                              | PASS: .env.local ignored/untracked; exact-value scan found no configured credential in tracked files or browser static assets.                                                                                                                                                   |
+| Owner Phantom extension              | MANUAL: isolated Edge has no owner extension. Confirm public-domain connection, Devnet, address, and balance before recording. No new transfer needed.                                                                                                                           |
+
+No dependencies, scoring thresholds, inference configuration, transaction-signing logic, or billing settings changed in this pass. Screenshots/model output are ignored local test evidence. The prior verification below documents the baseline; the results above cover the latest application.
+
+## Baseline verification
+
 Public URL: https://invoice-shield-ai.vercel.app/
 
 Tested application commit: 03df908b129cf30443ace85d53e56bcf5134a882. The public /api/health endpoint matched this GitHub commit with hostedFreeAIConfigured=true and paidOpenAIEnabled=false. Later report/test-output-only commits do not change the application behavior tested here.

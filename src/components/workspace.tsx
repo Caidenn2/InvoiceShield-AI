@@ -1871,6 +1871,10 @@ export default function Workspace() {
               }}
             />
           </label>
+          <p className="fine-print">
+            Devnet priority fee is explicitly set to 0 test SOL before signing.
+            The network base fee still applies and is shown by your wallet.
+          </p>
           <label className="consent">
             <input
               type="checkbox"

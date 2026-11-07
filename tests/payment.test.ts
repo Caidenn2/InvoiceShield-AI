@@ -4,6 +4,9 @@ import {
   Connection,
   Transaction,
   SystemProgram,
+  ComputeBudgetProgram,
+  ComputeBudgetInstruction,
+  PublicKey,
 } from "@solana/web3.js";
 import {
   toLamports,
@@ -50,15 +53,139 @@ function mockRpc(error: unknown = null, amount = 10000000) {
   } as unknown as Connection;
 }
 describe("Payment safeguards", () => {
-  it("does not broadcast a wallet-modified transfer", async () => {
-    const rpc = {
-      ...mockRpc(),
-      getLatestBlockhash: vi
-        .fn()
-        .mockResolvedValue({
+  it.each(["recipient", "amount", "blockhash", "fee payer", "priority fee"])(
+    "blocks a changed %s before persistence or broadcast",
+    async (change) => {
+      const rpc = {
+        ...mockRpc(),
+        getLatestBlockhash: vi.fn().mockResolvedValue({
           blockhash: Keypair.generate().publicKey.toBase58(),
           lastValidBlockHeight: 100,
         }),
+        sendRawTransaction: vi.fn(),
+      };
+      const persist = vi.fn();
+      await expect(
+        submitPayment(
+          rpc as unknown as Connection,
+          sender.publicKey,
+          recipient,
+          "0.01",
+          async (tx) => {
+            if (change === "recipient")
+              tx.instructions[2] = SystemProgram.transfer({
+                fromPubkey: sender.publicKey,
+                toPubkey: Keypair.generate().publicKey,
+                lamports: 10000000,
+              });
+            if (change === "amount")
+              tx.instructions[2] = SystemProgram.transfer({
+                fromPubkey: sender.publicKey,
+                toPubkey: new PublicKey(recipient),
+                lamports: 10000001,
+              });
+            if (change === "blockhash")
+              tx.recentBlockhash = Keypair.generate().publicKey.toBase58();
+            if (change === "fee payer")
+              tx.feePayer = Keypair.generate().publicKey;
+            if (change === "priority fee")
+              tx.instructions[1] = ComputeBudgetProgram.setComputeUnitPrice({
+                microLamports: 1000000n,
+              });
+            tx.partialSign(sender);
+            return tx;
+          },
+          persist,
+        ),
+      ).rejects.toThrow("different from the approved");
+      expect(persist).not.toHaveBeenCalled();
+      expect(rpc.sendRawTransaction).not.toHaveBeenCalled();
+    },
+  );
+  it("rejects invalid signatures before recording a submitted payment", async () => {
+    const rpc = {
+      ...mockRpc(),
+      getLatestBlockhash: vi.fn().mockResolvedValue({
+        blockhash: Keypair.generate().publicKey.toBase58(),
+        lastValidBlockHeight: 100,
+      }),
+      sendRawTransaction: vi.fn(),
+    };
+    const persist = vi.fn();
+    await expect(
+      submitPayment(
+        rpc as unknown as Connection,
+        sender.publicKey,
+        recipient,
+        "0.01",
+        async (tx) => {
+          tx.sign(sender);
+          tx.signatures[0].signature!.fill(0);
+          return tx;
+        },
+        persist,
+      ),
+    ).rejects.toThrow(/Signature verification failed/);
+    expect(persist).not.toHaveBeenCalled();
+    expect(rpc.sendRawTransaction).not.toHaveBeenCalled();
+  });
+  it("supports Phantom fee handling without changing the approved message", async () => {
+    const rpc = {
+      ...mockRpc(),
+      getLatestBlockhash: vi.fn().mockResolvedValue({
+        blockhash: Keypair.generate().publicKey.toBase58(),
+        lastValidBlockHeight: 100,
+      }),
+      sendRawTransaction: vi.fn().mockResolvedValue("sig"),
+      confirmTransaction: vi.fn().mockResolvedValue({ value: { err: null } }),
+    };
+    const sign = vi.fn(async (tx: Transaction) => {
+      // Reproduce Phantom's documented policy on a serialized wallet round trip.
+      const returned = Transaction.from(
+        tx.serialize({ requireAllSignatures: false, verifySignatures: false }),
+      );
+      if (
+        !returned.instructions.some((ix) =>
+          ix.programId.equals(ComputeBudgetProgram.programId),
+        )
+      ) {
+        returned.instructions.unshift(
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 20000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }),
+        );
+      }
+      returned.sign(sender);
+      return returned;
+    });
+    const result = await submitPayment(
+      rpc as unknown as Connection,
+      sender.publicKey,
+      recipient,
+      "0.01",
+      sign,
+      async () => {},
+    );
+    expect(result.lamports).toBe(10000000);
+    expect(rpc.sendRawTransaction).toHaveBeenCalledTimes(1);
+    const approved = sign.mock.calls[0][0];
+    expect(
+      ComputeBudgetInstruction.decodeSetComputeUnitLimit(
+        approved.instructions[0],
+      ).units,
+    ).toBe(20000);
+    expect(
+      ComputeBudgetInstruction.decodeSetComputeUnitPrice(
+        approved.instructions[1],
+      ).microLamports,
+    ).toBe(0n);
+  });
+  it("does not broadcast a wallet-modified transfer", async () => {
+    const rpc = {
+      ...mockRpc(),
+      getLatestBlockhash: vi.fn().mockResolvedValue({
+        blockhash: Keypair.generate().publicKey.toBase58(),
+        lastValidBlockHeight: 100,
+      }),
       sendRawTransaction: vi.fn(),
     };
     const persist = vi.fn();

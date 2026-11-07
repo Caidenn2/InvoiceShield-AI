@@ -3,6 +3,7 @@ import {
   SystemProgram,
   Transaction,
   Connection,
+  ComputeBudgetProgram,
 } from "@solana/web3.js";
 import type { Receipt, PendingPayment } from "./invoice";
 import bs58 from "bs58";
@@ -107,6 +108,10 @@ export async function submitPayment(
   await assertDevnet(connection);
   const latest = await connection.getLatestBlockhash("confirmed");
   const tx = new Transaction({ ...latest, feePayer: sender }).add(
+    // Phantom otherwise inserts its own fee instructions while signing.
+    // Pin the Devnet budget up front so the exact-message guard stays strict.
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 20000 }),
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 0n }),
     SystemProgram.transfer({
       fromPubkey: sender,
       toPubkey: new PublicKey(recipient),
@@ -127,9 +132,11 @@ export async function submitPayment(
   const signatureBytes = signed.signature;
   if (!signatureBytes) throw new Error("Wallet did not sign the transaction.");
   const signature = bs58.encode(signatureBytes);
+  // Verify signatures before creating a pending record or attempting broadcast.
+  const serialized = signed.serialize();
   const pending = { signature, sender: sender.toBase58(), recipient, lamports };
   await onSubmitted(pending);
-  await connection.sendRawTransaction(signed.serialize(), {
+  await connection.sendRawTransaction(serialized, {
     skipPreflight: false,
     maxRetries: 3,
   });

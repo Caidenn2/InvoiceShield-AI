@@ -3,7 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import {
+  WalletMultiButton,
+  useWalletModal,
+} from "@solana/wallet-adapter-react-ui";
 import { get, set } from "idb-keyval";
 import {
   ArrowUpRight,
@@ -32,6 +35,7 @@ import {
   Trash2,
   Download,
   LockKeyhole,
+  Cpu,
 } from "lucide-react";
 import {
   Invoice,
@@ -41,9 +45,14 @@ import {
   review,
   status,
   formatMoney,
+  riskScore,
 } from "@/lib/invoice";
+import { extractLocally } from "@/lib/local-extraction";
+import { parseInvoiceText } from "@/lib/local-parser";
+import { localAISchema } from "@/lib/local-ai";
+import DemoGuide from "./demo-guide";
 import { samples } from "@/lib/samples";
-import { explorer, submitPayment, verifyReceipt } from "@/lib/payment";
+import { explorer, submitPayment, waitForReceipt } from "@/lib/payment";
 
 const storageKey = "invoiceshield.records.v1";
 function Modal({
@@ -80,7 +89,48 @@ function Modal({
   );
 }
 const short = (s: string) => s.slice(0, 5) + "…" + s.slice(-5);
+function RiskMeter({ findings }: { findings: ReturnType<typeof review> }) {
+  const score = riskScore(findings);
+  return (
+    <div
+      className={
+        "risk-meter " + (score >= 40 ? "high" : score ? "medium" : "low")
+      }
+    >
+      <div
+        className="risk-dial"
+        style={{
+          background: `conic-gradient(currentColor ${score * 3.6}deg, #26333d 0deg)`,
+        }}
+      >
+        <span>
+          <b>{score}</b>
+          <small>/100</small>
+        </span>
+      </div>
+      <div>
+        <span className="mini-label">RULE-BASED REVIEW PRIORITY</span>
+        <h3>
+          {score >= 40
+            ? "Investigate before paying"
+            : score
+              ? "A closer look is needed"
+              : "No rule-based issues detected"}
+        </h3>
+        <p>Transparent triage score · not a probability of fraud</p>
+      </div>
+    </div>
+  );
+}
 export default function Workspace() {
+  const [extractedText, setExtractedText] = useState(""),
+    [localMethod, setLocalMethod] = useState<
+      "pdf-text" | "local-ocr" | undefined
+    >(),
+    [localReport, setLocalReport] = useState<Invoice["localAI"]>(),
+    [progress, setProgress] = useState(""),
+    [localReady, setLocalReady] = useState(false),
+    [localReason, setLocalReason] = useState("Checking optional local model…");
   const [records, setRecords] = useState<Invoice[]>([]),
     [ready, setReady] = useState(false),
     [storageError, setStorageError] = useState("");
@@ -97,7 +147,7 @@ export default function Workspace() {
     [token, setToken] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [source, setSource] = useState<"ai" | "manual">("manual"),
+    [source, setSource] = useState<"ai" | "manual" | "local">("manual"),
     [notice, setNotice] = useState("");
   const [edit, setEdit] = useState(false),
     [payOpen, setPayOpen] = useState(false),
@@ -113,6 +163,20 @@ export default function Workspace() {
     history = useRef<Invoice[]>([]);
   const { connection } = useConnection(),
     wallet = useWallet();
+  const { setVisible: setWalletSelectorVisible } = useWalletModal();
+  useEffect(() => {
+    fetch("/api/local-ai")
+      .then((r) => r.json())
+      .then((data) => {
+        setLocalReady(data.available === true);
+        setLocalReason(data.reason || "Local AI unavailable.");
+      })
+      .catch(() =>
+        setLocalReason(
+          "Optional local model unavailable. Free extraction and rules are ready.",
+        ),
+      );
+  }, []);
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -236,6 +300,10 @@ export default function Workspace() {
             : !i.receipt),
     );
   function openUpload() {
+    setExtractedText("");
+    setLocalMethod(undefined);
+    setLocalReport(undefined);
+    setProgress("");
     setSelected(null);
     setDraft({ ...blankInvoice });
     setFile(null);
@@ -257,8 +325,73 @@ export default function Workspace() {
     setError("");
     setDraft({ ...blankInvoice });
     setSource("manual");
+    setExtractedText("");
+    setLocalMethod(undefined);
+    setLocalReport(undefined);
   }
   async function extract() {
+    if (!file) return;
+    setBusy(true);
+    setError("");
+    setLocalReport(undefined);
+    try {
+      const result = await extractLocally(file, setProgress);
+      setDraft(result.invoice);
+      setExtractedText(result.text);
+      setLocalMethod(result.method);
+      setSource("local");
+      setProgress(
+        "Extracted on this device. Review every field before saving.",
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Local extraction failed. Enter fields manually or paste document text.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function analyzeLocal() {
+    if (!extractedText) return;
+    setBusy(true);
+    setError("");
+    setProgress("Running optional local AI…");
+    try {
+      const response = await fetch("/api/local-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: extractedText,
+          history: JSON.stringify(
+            history.current.slice(0, 10).map((i) => ({
+              vendor: i.vendor,
+              number: i.number,
+              total: i.total,
+              items: i.items.slice(0, 3).map((v) => v.description),
+            })),
+          ).slice(0, 10000),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      const report = localAISchema.parse(data.report);
+      setLocalReport({ ...report, model: data.report.model });
+      setProgress(
+        "Local AI completed. Its findings are separate from deterministic rules.",
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Local model unavailable. No AI report was generated.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function extractWithOpenAI() {
     if (!file) return;
     setBusy(true);
     setError("");
@@ -316,6 +449,9 @@ export default function Workspace() {
           current && edit ? current.createdAt : new Date().toISOString(),
         source: edit && current ? current.source : source,
         filename: file?.name,
+        documentText: extractedText || undefined,
+        extractionMethod: localMethod,
+        localAI: localReport,
       };
       persist(
         edit
@@ -409,7 +545,7 @@ export default function Workspace() {
     setPayBusy(true);
     setPayError("");
     try {
-      const receipt = await verifyReceipt(connection, current.pending);
+      const receipt = await waitForReceipt(connection, current.pending);
       await updatePayment(current.id, { receipt, pending: undefined });
       setNotice("Receipt verified against Solana Devnet.");
       refreshBalance();
@@ -591,9 +727,11 @@ export default function Workspace() {
                         {current.number || "No invoice number"} ·{" "}
                         {current.source === "sample"
                           ? "Fictional sample"
-                          : current.source === "ai"
-                            ? "AI extracted · review required"
-                            : "Manually entered"}
+                          : current.source === "local"
+                            ? `${current.extractionMethod === "pdf-text" ? "Local PDF text" : "Local OCR"} · review required`
+                            : current.source === "ai"
+                              ? "AI extracted · review required"
+                              : "Manually entered"}
                       </p>
                     </div>
                     <span
@@ -616,6 +754,9 @@ export default function Workspace() {
                             className="text-button"
                             onClick={() => {
                               setDraft(current);
+                              setExtractedText(current.documentText || "");
+                              setLocalMethod(current.extractionMethod);
+                              setLocalReport(current.localAI);
                               setEdit(true);
                               setError("");
                               setUploadOpen(true);
@@ -728,6 +869,7 @@ export default function Workspace() {
                           </h2>
                           <span className="mini-label">RULE-BASED</span>
                         </div>
+                        <RiskMeter findings={findings} />
                         <div
                           className={
                             "review-summary " +
@@ -779,6 +921,45 @@ export default function Workspace() {
                         </p>
                       </section>
                       <section className="panel payment-panel">
+                        <div className="local-ai-report">
+                          <div className="local-ai-heading">
+                            <Cpu size={17} />
+                            <h3>Semantic AI review</h3>
+                            <span className="mini-label">
+                              {current.localAI
+                                ? "LOCAL MODEL · LIVE"
+                                : "NOT RUN"}
+                            </span>
+                          </div>
+                          {current.localAI ? (
+                            <>
+                              <p>{current.localAI.summary}</p>
+                              <small>
+                                Ollama · {current.localAI.model} · advisory
+                                findings
+                              </small>
+                              {current.localAI.findings.map((f, i) => (
+                                <article className="finding" key={i}>
+                                  <div>
+                                    <h4>{f.title}</h4>
+                                    <span className="mini-label">
+                                      AI · {f.severity}
+                                    </span>
+                                  </div>
+                                  <p>{f.evidence}</p>
+                                  <small>{f.action}</small>
+                                </article>
+                              ))}
+                            </>
+                          ) : (
+                            <p>
+                              No semantic AI model ran for this invoice.
+                              Rule-based findings above remain fully functional.
+                              Local OCR recognizes text; it does not determine
+                              fraud.
+                            </p>
+                          )}
+                        </div>
                         <div className="panel-title">
                           <h2>
                             <Wallet size={18} /> Devnet payment
@@ -1019,6 +1200,25 @@ export default function Workspace() {
                       </div>
                     </>
                   )}
+                  {tab === "overview" && ready && !storageError && (
+                    <DemoGuide
+                      paid={
+                        !!records.find((i) => i.id === "sample-cloud")?.receipt
+                      }
+                      onChoose={(id, pay) => {
+                        loadSamples();
+                        setSelected(id);
+                        setPayError("");
+                        if (
+                          pay &&
+                          !history.current.find((i) => i.id === id)?.receipt
+                        ) {
+                          setPayOpen(true);
+                          setConsent(false);
+                        }
+                      }}
+                    />
+                  )}
                   <div className="dashboard-grid">
                     <section className="panel invoices-panel">
                       <div className="panel-title">
@@ -1133,6 +1333,18 @@ export default function Workspace() {
                                     </small>
                                   </td>
                                   <td>
+                                    <span
+                                      className={
+                                        "risk-pill " +
+                                        (riskScore(issues) >= 40
+                                          ? "high"
+                                          : riskScore(issues)
+                                            ? "medium"
+                                            : "low")
+                                      }
+                                    >
+                                      {riskScore(issues)}/100
+                                    </span>{" "}
                                     <span
                                       className={
                                         "status-badge " +
@@ -1358,6 +1570,9 @@ export default function Workspace() {
               <a href="/samples/near-duplicate.png" download>
                 Similar <Download size={11} />
               </a>
+              <a href="/samples/suspicious-duplicate.png" download>
+                Suspicious <Download size={11} />
+              </a>
             </div>
             {preview && (
               <div className="upload-preview">
@@ -1368,15 +1583,6 @@ export default function Workspace() {
                 )}
               </div>
             )}
-            <label className="field">
-              <span>AI demo access token (if required)</span>
-              <input
-                type="password"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                autoComplete="off"
-              />
-            </label>
             <button
               className="button full"
               disabled={!file || busy}
@@ -1387,20 +1593,94 @@ export default function Workspace() {
               ) : (
                 <ScanLine size={17} />
               )}{" "}
-              {busy ? "Reading invoice…" : "Extract with AI"}
+              {busy ? "Reading on your device…" : "Extract for free"}
             </button>
             <p className="fine-print">
-              AI extraction sends this document and summaries of up to 20 recent
-              invoices to OpenAI. Without an API key, enter fields manually and
-              use deterministic checks.
+              PDF text and image OCR run on this device. No paid API, account,
+              or document upload is needed. Review every extracted value.
             </p>
+            {progress && (
+              <p className="extraction-progress" role="status">
+                {progress}
+              </p>
+            )}
+            <details className="extracted-text">
+              <summary>Read or correct document text</summary>
+              <textarea
+                aria-label="Document text"
+                maxLength={20000}
+                value={extractedText}
+                onChange={(e) => {
+                  setExtractedText(e.target.value);
+                  setLocalReport(undefined);
+                }}
+                placeholder="Paste invoice text here if OCR is unavailable."
+              />
+              <button
+                className="button secondary small"
+                disabled={!extractedText || busy}
+                onClick={() => {
+                  setDraft(parseInvoiceText(extractedText));
+                  setSource("local");
+                  setError("");
+                }}
+              >
+                Map text to fields
+              </button>
+            </details>
+            <div className="optional-ai">
+              <div>
+                <Cpu size={16} />
+                <strong>Optional local AI</strong>
+                <span className="mini-label">FREE</span>
+              </div>
+              <p>{localReason}</p>
+              <button
+                className="button secondary full small"
+                disabled={!localReady || !extractedText || busy}
+                onClick={analyzeLocal}
+              >
+                Analyze with Ollama
+              </button>
+              {localReport && (
+                <p className="green">
+                  Local model completed: {localReport.model}
+                </p>
+              )}
+            </div>
+            <details className="optional-cloud">
+              <summary>Optional cloud provider (disabled by default)</summary>
+              <p className="fine-print">
+                OpenAI is not needed for this demo. Enabling it may use paid API
+                credits. Requires ENABLE_OPENAI=true on the server and explicit
+                use of this button.
+              </p>
+              <label className="field">
+                <span>Optional cloud access token</span>
+                <input
+                  type="password"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+              <button
+                className="button secondary small"
+                disabled={!file || busy}
+                onClick={extractWithOpenAI}
+              >
+                Request optional OpenAI extraction
+              </button>
+            </details>
           </div>
           <div>
             <div className="form-caption">
               <span className="mini-label">
                 {source === "ai"
                   ? "AI EXTRACTED · VERIFY VALUES"
-                  : "MANUAL ENTRY"}
+                  : source === "local"
+                    ? "LOCAL EXTRACTION · VERIFY VALUES"
+                    : "MANUAL ENTRY"}
               </span>
               <p>Leave unknown values blank. Never guess.</p>
             </div>
@@ -1538,8 +1818,35 @@ export default function Workspace() {
             </p>
           </div>
           <div className="payment-wallet">
-            <WalletMultiButton />
-            <span>{wallet.publicKey?.toBase58()}</span>
+            {wallet.publicKey ? (
+              <>
+                <span className="network">
+                  <i />
+                  Connected wallet · Devnet transfer
+                </span>
+                <span>{wallet.publicKey.toBase58()}</span>
+              </>
+            ) : (
+              <>
+                <button
+                  className="button secondary"
+                  onClick={() => {
+                    setPayOpen(false);
+                    setWalletSelectorVisible(true);
+                    setNotice(
+                      "Connect your wallet, then reopen the test payment review. Your recipient and amount stay in the form.",
+                    );
+                  }}
+                >
+                  <Wallet size={16} />
+                  Connect wallet to continue
+                </button>
+                <p className="fine-print">
+                  Wallet selection opens separately. Reopen this payment review
+                  after connecting.
+                </p>
+              </>
+            )}
           </div>
           <label className="field">
             <span>Recipient wallet address</span>

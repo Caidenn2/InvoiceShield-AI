@@ -8,3 +8,6 @@ out/
 coverage/
 .vercel/
 test-results/
+public/workers/
+public/ocr/core/
+public/ocr/worker.min.js

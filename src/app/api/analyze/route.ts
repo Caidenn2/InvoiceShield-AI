@@ -3,6 +3,7 @@ import { zodTextFormat } from "openai/helpers/zod";
 import { invoiceSchema } from "@/lib/invoice";
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
+import { safeErrorSummary, analysisErrorResponse } from "@/lib/server-error";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 const limit = 4 * 1024 * 1024;
@@ -22,6 +23,15 @@ const historySchema = z
   )
   .max(20);
 export async function POST(request: Request) {
+  if (process.env.ENABLE_OPENAI !== "true")
+    return Response.json(
+      {
+        error:
+          "Optional OpenAI extraction is disabled. Use free local extraction; no API credits are needed.",
+        code: "CLOUD_AI_DISABLED",
+      },
+      { status: 503 },
+    );
   if (!process.env.OPENAI_API_KEY)
     return Response.json(
       {
@@ -159,16 +169,11 @@ export async function POST(request: Request) {
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
-    console.error(
-      "Invoice analysis failed:",
-      error instanceof Error ? error.name : "unknown",
-    );
+    console.error("Invoice analysis failed:", safeErrorSummary(error));
+    const failure = analysisErrorResponse(error);
     return Response.json(
-      {
-        error:
-          "Extraction failed. Retry or enter details manually. No payment has been initiated.",
-      },
-      { status: 502 },
+      { error: failure.error, code: failure.code },
+      { status: failure.status, headers: { "Cache-Control": "no-store" } },
     );
   }
 }

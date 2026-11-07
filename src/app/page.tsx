@@ -142,7 +142,7 @@ export default function Landing() {
               n: "01",
               icon: ScanLine,
               title: "Bring your invoices.",
-              text: "Upload a PDF or image. Extract the details with AI, then review and correct every field.",
+              text: "Read PDFs and images on your device with free local OCR. Review and correct every extracted field.",
             },
             {
               n: "02",
@@ -176,9 +176,9 @@ export default function Landing() {
           <span>You make the final call.</span>
         </h2>
         <p>
-          AI helps interpret documents. Deterministic checks verify the numbers.
+          Free local OCR reads documents. Transparent rules check the numbers.
           <br />
-          Your wallet stays in your control.
+          Optional local AI adds context. Your wallet stays in your control.
         </p>
         <Link href="/dashboard" className="button">
           Start with a sample invoice <ArrowRight size={17} />

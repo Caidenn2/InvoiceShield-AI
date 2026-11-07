@@ -17,7 +17,7 @@ async function main() {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await fs.mkdir("docs/screenshots", { recursive: true });
-  await page.goto("http://127.0.0.1:3000", { waitUntil: "networkidle" });
+  await page.goto("http://127.0.0.1:3000", { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: /Good business/ }).waitFor();
   await page.screenshot({
     path: "docs/screenshots/landing.png",
@@ -58,11 +58,12 @@ async function main() {
     .getByLabel("Upload invoice file")
     .setInputFiles("public/samples/normal.png");
   await page.getByRole("img", { name: "Uploaded invoice preview" }).waitFor();
-  await page.getByRole("button", { name: "Extract with AI" }).click();
-  await page
-    .getByRole("alert")
-    .filter({ hasText: /AI extraction is not configured/ })
-    .waitFor();
+  // Manual fallback is covered here; actual OCR runs in test:free-demo.
+  const cloud = await page.request.post("http://127.0.0.1:3000/api/analyze", {
+    data: "disabled-check",
+  });
+  assert.equal(cloud.status(), 503);
+  assert.equal((await cloud.json()).code, "CLOUD_AI_DISABLED");
   await page.getByLabel("Vendor name", { exact: true }).fill("Test Vendor");
   await page.getByLabel("Invoice number", { exact: true }).fill("TEST-001");
   await page.getByLabel("Invoice date", { exact: true }).fill("2026-11-06");
@@ -82,7 +83,15 @@ async function main() {
     await page.getByRole("button", { name: "Approve in wallet" }).isDisabled(),
     true,
   );
-  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Connect wallet to continue", exact: true })
+    .click();
+  await page
+    .getByRole("heading", { name: "Approve a test payment" })
+    .waitFor({ state: "hidden" });
+  await page.locator(".wallet-adapter-modal").waitFor({ state: "visible" });
+  await page.locator(".wallet-adapter-modal-button-close").click();
+  await page.locator(".wallet-adapter-modal").waitFor({ state: "hidden" });
   await page.reload();
   await page
     .getByRole("button", { name: /T\. Test Vendor TEST-001/ })
@@ -103,7 +112,7 @@ async function main() {
   await page.getByRole("heading", { name: "Proof you can verify." }).waitFor();
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: landing, samples, exact/near duplicates, upload preview, honest AI fallback, manual save, payment gating, persistence, mobile navigation, and no page errors.",
+    "PASS: landing, samples, exact/near duplicates, upload preview, disabled paid provider, manual save, payment gating, persistence, mobile navigation, and no page errors.",
   );
   await browser.close();
 }

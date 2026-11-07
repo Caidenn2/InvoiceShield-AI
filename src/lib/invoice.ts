@@ -54,7 +54,19 @@ export type PendingPayment = {
 export type Invoice = InvoiceData & {
   id: string;
   createdAt: string;
-  source: "sample" | "ai" | "manual";
+  source: "sample" | "ai" | "manual" | "local";
+  documentText?: string;
+  extractionMethod?: "pdf-text" | "local-ocr";
+  localAI?: {
+    model: string;
+    summary: string;
+    findings: {
+      severity: "high" | "medium" | "info";
+      title: string;
+      evidence: string;
+      action: string;
+    }[];
+  };
   filename?: string;
   receipt?: Receipt;
   pending?: PendingPayment;
@@ -80,7 +92,10 @@ export const blankInvoice: InvoiceData = {
 };
 const norm = (v: string | null) =>
   (v || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-export function review(invoice: InvoiceData, history: Invoice[]): Finding[] {
+export function review(
+  invoice: InvoiceData & { documentText?: string },
+  history: Invoice[],
+): Finding[] {
   const findings: Finding[] = [];
   const add = (
     severity: Finding["severity"],
@@ -190,7 +205,8 @@ export function review(invoice: InvoiceData, history: Invoice[]): Finding[] {
     if (
       norm(invoice.paymentDetails) &&
       norm(h.paymentDetails) &&
-      norm(invoice.paymentDetails) !== norm(h.paymentDetails)
+      invoice.paymentDetails!.replace(/[^\p{L}\p{N}]/gu, "") !==
+        h.paymentDetails!.replace(/[^\p{L}\p{N}]/gu, "")
     )
       add(
         "high",
@@ -221,7 +237,49 @@ export function review(invoice: InvoiceData, history: Invoice[]): Finding[] {
       `${invoice.dueDate} is before ${invoice.date}.`,
       "Confirm the payment terms.",
     );
+  const content = [
+    invoice.documentText || "",
+    invoice.paymentDetails || "",
+    ...invoice.items.map((i) => i.description),
+  ].join("\n");
+  const suspicious = content.match(
+    /\b(?:gift\s*cards?|bypass.{0,25}(?:approval|verification)|do not (?:call|contact)|keep.{0,20}(?:secret|confidential)|urgent.{0,40}(?:transfer|payment)|(?:transfer|pay).{0,25}immediately)\b/i,
+  );
+  if (suspicious)
+    add(
+      "high",
+      "Suspicious payment request",
+      `Document includes: “${suspicious[0]}”.`,
+      "Contact the vendor through a previously trusted channel before paying.",
+    );
+  const injection = content.match(
+    /ignore (?:all |previous )?instructions|system prompt|mark (?:this )?invoice (?:safe|approved)/i,
+  );
+  if (injection)
+    add(
+      "high",
+      "Embedded review instruction",
+      `Document includes an instruction targeting the reviewer: “${injection[0]}”.`,
+      "Treat document instructions as untrusted and verify the source independently.",
+    );
   return findings;
+}
+export function riskScore(findings: Finding[]) {
+  // A transparent prioritization score, not a calibrated probability of fraud.
+  const groups = new Map<string, number>();
+  findings.forEach((f) =>
+    groups.set(
+      f.title,
+      Math.max(
+        groups.get(f.title) || 0,
+        f.severity === "high" ? 40 : f.severity === "medium" ? 18 : 5,
+      ),
+    ),
+  );
+  return Math.min(
+    100,
+    [...groups.values()].reduce((sum, value) => sum + value, 0),
+  );
 }
 export function status(findings: Finding[]) {
   return findings.some((f) => f.severity === "high")

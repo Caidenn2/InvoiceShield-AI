@@ -21,12 +21,35 @@ function upload(
   });
 }
 beforeEach(() => {
+  vi.stubEnv("ENABLE_OPENAI", "true");
   vi.stubEnv("OPENAI_API_KEY", "test-only-not-a-real-key");
   vi.stubEnv("INVOICE_ANALYSIS_TOKEN", "secret");
   parse.mockReset();
 });
 afterEach(() => vi.unstubAllEnvs());
 describe("AI upload endpoint", () => {
+  it("keeps optional paid extraction disabled unless the server owner explicitly opts in", async () => {
+    vi.stubEnv("ENABLE_OPENAI", "false");
+    const response = await POST(upload());
+    expect(response.status).toBe(503);
+    expect((await response.json()).code).toBe("CLOUD_AI_DISABLED");
+    expect(parse).not.toHaveBeenCalled();
+  });
+  it("explains exhausted API credits without leaking provider details", async () => {
+    parse.mockRejectedValue({
+      status: 429,
+      code: "credit_balance_exhausted",
+      message: "private provider detail",
+    });
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = await POST(upload());
+    expect(result.status).toBe(503);
+    const body = await result.json();
+    expect(body.code).toBe("AI_CREDITS_REQUIRED");
+    expect(body.error).toContain("no remaining credits");
+    expect(body.error).not.toContain("private provider detail");
+    log.mockRestore();
+  });
   it.each([
     ["application/pdf", [37, 80, 68, 70, 45], "input_file"],
     ["image/jpeg", [255, 216, 255, 224], "input_image"],

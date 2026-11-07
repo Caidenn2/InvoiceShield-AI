@@ -54,6 +54,10 @@ export const samples: Invoice[] = [
     id: "sample-duplicate",
     number: "FRM-2026-104",
     filename: "forma-duplicate.pdf",
+    paymentDetails:
+      "Forma Studio • NEW wallet: 4Nd1mYf8P6a8v2xE7S6M2tK9o5wP3qR8u7zV6bC5dA4e",
+    documentText:
+      "URGENT payment required. Transfer immediately. Do not contact the old accounts team. Use the new wallet address.",
   },
   {
     ...base,

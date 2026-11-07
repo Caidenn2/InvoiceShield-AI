@@ -6,11 +6,11 @@ Prerequisites: app running locally or on a free deployment, compatible wallet wi
 
 **15–40 seconds — Actual free extraction.** Upload normal.png and click Extract for free. “This is real text recognition on my device, with no paid API. The extracted values are editable; unknown values stay blank.” Show vendor, reference, totals, and line items. Save.
 
-**40–65 seconds — Risk and evidence.** Select Catch a suspicious duplicate. “The invoice number matches an earlier record. Payment details changed, and the document demands an urgent transfer. These are deterministic findings with visible evidence. The score prioritizes review; it is not a fraud probability.” Show that payment is blocked. Identify the record as fictional sample data.
+**40–70 seconds — Risk, evidence, and genuine AI.** Select Catch a suspicious duplicate. “The rules found a matching reference, changed payment details, and urgency. Now I explicitly request a language-model explanation before signing.” With a genuinely configured provider, consent and choose Explain risks with AI, wait for the actual result, and show its provider/model/time and supporting evidence. If no model is configured or inference fails, say so and show NOT RUN. Never replace it with a canned response. Identify the invoice as fictional.
 
 **65–80 seconds — Legitimate record.** Select Review a legitimate invoice. “The Nimbus Cloud sample has complete fields and consistent arithmetic. No detected issue is not a guarantee of authenticity. I still verify the recipient independently.” Connect the Devnet wallet.
 
-**80–110 seconds — Real transfer.** Select Approve a real Devnet transfer, enter the recipient and 0.01 test SOL, explicitly confirm, and sign in the wallet. “This is a real Devnet transfer using test funds. It does not settle the invoice's USD value. The app never signs for me.” Wait for actual confirmation.
+**80–110 seconds — Independent proof.** Prefer the receipt for a previously confirmed Devnet transfer and choose Reverify on Devnet. “This checks the same on-chain transfer again without another payment or wallet signature.” Show the matching addresses, test SOL amount, and Explorer link. If recording a fresh transfer instead, obtain explicit owner approval first, confirm the recipient/amount, and sign in the wallet. Test SOL does not settle the invoice's USD value. Never substitute a fake confirmation.
 
 **110–120 seconds — Proof.** Open the verified receipt and Explorer. “The sender, recipient, and amount are checked against the blockchain. No invoice details go on-chain. Verify smarter. Pay faster. Prove everything.”
 
@@ -18,7 +18,7 @@ Prerequisites: app running locally or on a free deployment, compatible wallet wi
 
 Local OCR performs neural text recognition. PDF text extraction and field mapping are distinct from semantic reasoning. Rules handle arithmetic, duplicates, changed details, and suspicious instructions. Optional Ollama can add a separately labeled semantic report when a local model is installed and has actually completed a request. If it is not available, say exactly that. Do not claim that rule-based findings came from a language model.
 
-For an AI-track demonstration with Ollama, preinstall and warm the model before recording, run it on the local server, and show the returned report and model label. Its integration is not a claim of successful model inference until tested on the owner's computer.
+For AI-track recording, test the genuine Groq Free response beforehand or install and warm Ollama on a local server with enough free disk. Show the actual returned model report. Integration tests with mocked responses are not evidence of successful real inference. See AI-TRACK.md for the official category descriptions and sources.
 
 ## Judge questions
 

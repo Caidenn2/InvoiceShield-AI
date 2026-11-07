@@ -1,5 +1,7 @@
 # Verification status
 
+The current public deployment and genuine-inference verification results are in [FINAL-REPORT.md](FINAL-REPORT.md). It records 78 passing unit tests, public OCR/PDF/browser checks, and the live model/wallet/receipt evidence still required. Older observations below are retained as development history and must not override the final report.
+
 ## Verified free workflow
 
 - 61 unit tests pass across invoice validation/arithmetic/duplicates, local field mapping, suspicious payment requests, risk scoring, optional local-model endpoint validation, private diagnostics, cloud opt-in behavior, and payment safeguards.
@@ -20,7 +22,7 @@
 - Read-only sampling of recent public transactions did not find a suitable direct transfer; it was not used to seed a receipt or presented as an InvoiceShield payment.
 - Ollama was not installed/running. Optional semantic inference is not live-verified. The complete free demo does not depend on installing it.
 - An earlier explicitly requested OpenAI call reached the provider but returned credit_balance_exhausted. The current free build disables OpenAI by default and requires no funding. Successful live OpenAI extraction is not claimed.
-- GitHub push authorization, Vercel account/repository connection, free deployment, public URL checks, and final two-minute wallet rehearsal remain pending owner actions.
+- GitHub push and public Vercel deployment are now verified; see FINAL-REPORT.md. Final live Phantom connection, existing-receipt verification, genuine semantic inference, and the two-minute rehearsal still require the listed owner actions.
 
 ## Honest demo boundaries
 

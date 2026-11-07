@@ -12,6 +12,8 @@ The app is prepared for a free personal Vercel deployment. Do not upgrade a plan
 
 ## Runtime boundaries
 
+Optional genuine semantic inference on the public site requires an eligible Groq Free account: add GROQ_API_KEY privately to the Vercel server environment and GROQ_FREE_PLAN_CONFIRMED=true only after checking Free status and leaving billing disabled. Redeploy, inspect /api/review availability, and run scripts/live-review-check.cjs with TEST_BASE_URL set to the public URL. Missing configuration is reported as NOT RUN; mocked tests do not count as live inference. No API key is bundled in client assets. Quota errors do not cause a paid upgrade or provider switch.
+
 Browser extraction and rule-based review work on the public deployment without paid services. The server's localhost address is the hosting machine, not the visitor's laptop. Therefore Ollama analysis is deliberately unavailable on Vercel. Use the local development server for optional local semantic AI.
 
 This remains a server-backed Next.js deployment with optional provider endpoints; no paid backend database is needed. History is browser-local and does not follow users across devices or hostnames. There is no shared team ledger.

@@ -30,6 +30,6 @@ Authenticated team workspaces, durable payment intents with server-enforced idem
 
 ## Award positioning
 
-Best Beginner Hack is the primary positioning: a useful, understandable, free workflow with transparent technical boundaries. AI track discussion should distinguish actual local neural OCR from deterministic checks and optional semantic reasoning. Demonstrate an actual local model report before claiming live Ollama inference. Overall positioning depends on a polished, verified public demo with a real wallet-approved Devnet payment. Do not claim DeFi eligibility: this app implements review and transfers, not lending, liquidity, yield, or another established DeFi protocol. Check the event’s actual criteria before selecting tracks. No award or eligibility is claimed here.
+Best Beginner Hack is the primary positioning: a useful, understandable, free workflow with transparent technical boundaries. AI track discussion should distinguish actual neural OCR, deterministic checks, and model-generated pre-payment explanations. The Groq Free integration or local Ollama fallback must return an actual report before claiming completed semantic AI functionality. See AI-TRACK.md for primary criteria and FINAL-REPORT.md for verified and blocked checks. Overall positioning depends on a polished public demo and genuine Devnet evidence. No award or eligibility is claimed here.
 
 AI development assistance is disclosed in AI-DISCLOSURE.md. Add the actual deployment URL, final demo video, screenshots, and final tested commit before submission.

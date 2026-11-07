@@ -126,7 +126,7 @@ async function main() {
       phantomConnection:
         "NOT TESTED: isolated browser has no owner wallet extension",
       existingReceipt:
-        "Needs owner public signature or verification in the owner browser",
+        "Covered by the separate read-only receipt-browser-check; this generic check does not verify receipts",
     },
   };
   await fs.writeFile(

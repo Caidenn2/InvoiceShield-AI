@@ -2,6 +2,8 @@
 
 **Verify smarter. Pay faster. Prove everything.**
 
+[Open the public demo](https://invoice-shield-ai.vercel.app/) · [Final verification report](docs/FINAL-REPORT.md)
+
 A free-first invoice review workspace with local document reading, explainable risk checks, optional local semantic AI, and wallet-approved Solana Devnet transfers.
 
 ## A complete demo without paid APIs
@@ -87,6 +89,8 @@ Next.js App Router, TypeScript, Tailwind CSS, Radix Dialog, Lucide icons, PDF.js
 The payment path checks the full Devnet genesis hash, builds a System Program transfer, verifies that the wallet-signed message matches the approved message, persists its signature before broadcasting, and verifies confirmation plus actual transfer details. Network errors can retry receipt lookup without creating another transaction. Cross-tab Web Locks, in-flight guards, and persisted pending records prevent accidental resubmission in one browser profile. They do not provide durable multi-user idempotency.
 
 Confirmed records offer Reverify on Devnet. This rereads the same signature and matches sender, recipient, and lamports without asking the wallet to sign or sending another transfer. Browser-local history on localhost is separate from history on the Vercel hostname; export records before changing browsers or hostnames.
+
+A fresh browser can use Payment receipts → Verify an existing transfer and paste a public Devnet signature. This read-only lookup needs no wallet or invoice history and does not mark an invoice paid.
 
 Upload limits: 4 MB, at most five PDF pages, English OCR. Layout variation and poor scans can cause missing or misread fields. Monetary rules currently use two-decimal rounding. Similarity and suspicious-request rules can generate false positives and miss altered invoices. A zero score does not establish safety or authenticity.
 

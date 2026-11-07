@@ -138,6 +138,24 @@ async function main() {
     path: "test-results/public/existing-receipt-mobile.png",
     fullPage: true,
   });
+  await fs.writeFile(
+    "test-results/public/receipt-browser-report.json",
+    JSON.stringify(
+      {
+        base,
+        status: "PASS",
+        signature: receipt.signature,
+        lamports: receipt.lamports,
+        network: "devnet",
+        savedReceiptReverified: true,
+        freshBrowserLookup: true,
+        mobileLayout: true,
+        paymentSubmissions: broadcasts,
+      },
+      null,
+      2,
+    ),
+  );
   console.log(
     "PASS: actual owner transfer reverified in the public browser without a wallet, signature request, or payment submission; fresh-browser signature lookup and mobile receipt layout passed.",
   );

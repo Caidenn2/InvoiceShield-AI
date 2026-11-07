@@ -64,7 +64,7 @@ async function main() {
   assert.equal(result.simulated, false);
   assert.equal(result.report.provider, "groq");
   assert.equal(result.report.model, "openai/gpt-oss-20b");
-  assert.equal(result.cached, false);
+  assert.equal(typeof result.cached, "boolean");
   await page.getByText(result.report.summary, { exact: true }).waitFor();
   assert.equal(await page.locator(".risk-dial b").innerText(), "100");
   assert.equal(
@@ -75,7 +75,11 @@ async function main() {
   );
   await page
     .locator(".local-ai-report")
-    .screenshot({ path: "test-results/public/genuine-ai.png" });
+    .screenshot({
+      path: result.cached
+        ? "test-results/public/cached-ai-first.png"
+        : "test-results/public/genuine-ai.png",
+    });
   const cachedPromise = page.waitForResponse(
     (r) => r.url().endsWith("/api/review") && r.request().method() === "POST",
   );
@@ -91,10 +95,23 @@ async function main() {
       { exact: true },
     )
     .waitFor();
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth,
+    ),
+    false,
+  );
+  await page.screenshot({
+    path: "test-results/public/cached-ai-mobile.png",
+    fullPage: true,
+  });
   assert.equal(submissions, 0);
   assert.deepEqual(errors, []);
   await fs.writeFile(
-    "test-results/public/genuine-ai.json",
+    result.cached
+      ? "test-results/public/cached-ai-check.json"
+      : "test-results/public/genuine-ai.json",
     JSON.stringify(
       {
         base,
@@ -114,6 +131,7 @@ async function main() {
         model: result.report.model,
         analyzedAt: result.report.analyzedAt,
         findings: result.report.findings.length,
+        inferenceRanThisRequest: !result.cached,
         cachedReplay: "PASS",
         ruleGateUnchanged: "PASS",
         paymentSubmissions: submissions,

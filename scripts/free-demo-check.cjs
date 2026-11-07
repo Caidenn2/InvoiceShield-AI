@@ -26,7 +26,11 @@ async function main() {
     cloud = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("request", (r) => {
-    if (r.url().includes("/api/analyze") || r.url().includes("api.openai.com"))
+    if (
+      r.url().includes("/api/analyze") ||
+      r.url().includes("api.openai.com") ||
+      (r.url().includes("/api/review") && r.method() === "POST")
+    )
       cloud.push(r.url());
   });
   await page.goto(`${baseURL}/dashboard`, {

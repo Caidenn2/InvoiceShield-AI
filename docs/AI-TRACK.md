@@ -22,4 +22,4 @@ Ollama remains supported through loopback on the local development server. It is
 
 The hosted integration and local fallback are covered by explicitly mocked unit tests. Those tests are not model inference. Run scripts/live-review-check.cjs against the configured deployment or local server to obtain a real report. If configuration is absent, it reports that no inference was attempted. The UI displays NOT RUN, provider/model/timestamp for actual results, and a cached-result label when no new inference occurred.
 
-No live hosted model success is claimed until a Free-plan key is supplied and a request actually succeeds. No paid service, billing upgrade, private key, or recovery phrase is required by this implementation.
+The owner subsequently confirmed the Groq Free plan and disabled billing, supplied the key privately, and authorized activation. Genuine local/API and deployed browser inference then passed with openai/gpt-oss-20b; see FINAL-REPORT.md for timestamps and evidence. No billing upgrade, paid dependency, private key, or recovery phrase was required.

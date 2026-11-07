@@ -1,6 +1,6 @@
 # Verification status
 
-The current public deployment and genuine-inference verification results are in [FINAL-REPORT.md](FINAL-REPORT.md). It records 78 passing unit tests, public OCR/PDF/browser checks, and the live model/wallet/receipt evidence still required. Older observations below are retained as development history and must not override the final report.
+The current public deployment and genuine-inference verification results are in [FINAL-REPORT.md](FINAL-REPORT.md). It records 81 passing unit tests, genuine Groq inference on the public site, actual existing-transfer verification, and the remaining manual Phantom check. Older observations below are retained as development history and must not override the final report.
 
 ## Verified free workflow
 
